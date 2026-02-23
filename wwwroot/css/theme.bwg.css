@@ -1,0 +1,312 @@
+/* =========================================================
+   UpliftBridge — THEME (single source of truth)
+   - Dark glass navbar with gold brand + gold CTA
+   - Page backgrounds by body class
+   ========================================================= */
+
+/* -------------------------
+   1) TOKENS
+   ------------------------- */
+:root{
+  --kg-black:#0b0b10;
+  --kg-ink:#111827;
+  --kg-muted:#6b7280;
+
+  --kg-ivory:#fbfaf7;
+  --kg-ivory-2:#f4f1ea;
+
+  --kg-gold:#c8a96a;
+  --kg-gold-2:#e6d3a2;
+
+  --kg-radius-xl: 26px;
+  --kg-radius-lg: 18px;
+
+  --kg-shadow-soft: 0 18px 55px rgba(0,0,0,.14);
+  --kg-shadow-strong: 0 30px 90px rgba(0,0,0,.38);
+
+  --kg-glass-dark: rgba(12, 12, 14, 0.68);
+  --kg-glass-border: rgba(255, 220, 160, 0.16);
+}
+
+/* -------------------------
+   2) BASE
+   ------------------------- */
+html, body { height:100%; }
+
+body{
+  font-family: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--kg-ink);
+
+  /* default background (light) */
+  background:
+    radial-gradient(circle at 18% 12%, rgba(200,169,106,.10), transparent 48%),
+    radial-gradient(circle at 82% 18%, rgba(0,0,0,.04), transparent 55%),
+    linear-gradient(180deg, var(--kg-ivory) 0%, var(--kg-ivory-2) 60%, #ffffff 100%);
+}
+
+body, h1,h2,h3 { -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision; }
+
+h1,h2,h3{
+  font-family: "Playfair Display","Times New Roman",serif;
+  color: #111;
+  letter-spacing: -0.02em;
+}
+
+p{ line-height: 1.55; }
+
+/* -------------------------
+   3) LAYOUT: real footer (page fills height)
+   ------------------------- */
+body{
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.site-main{ flex: 1; }
+
+/* -------------------------
+   4) NAVBAR — DEFAULT = DARK GLASS (this is your “good” look)
+   ------------------------- */
+.kg-header{ position: sticky; top: 0; z-index: 1000; }
+
+.kg-navbar{
+  background: linear-gradient(180deg, rgba(12,12,14,.92), rgba(12,12,14,.82));
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Links */
+.kg-navlink{
+  color: rgba(255,255,255,.86) !important;
+  font-weight: 800;
+  padding: .55rem .75rem;
+}
+.kg-navlink:hover{
+  color: rgba(255,255,255,1) !important;
+}
+
+/* Toggler */
+.kg-toggler{
+  border-color: rgba(255,255,255,.18) !important;
+}
+.kg-toggler .navbar-toggler-icon{
+  filter: invert(1) grayscale(1) brightness(1.2);
+}
+
+/* -------------------------
+   5) BRAND: GOLD COIN + WORDMARK
+   ------------------------- */
+.kg-navbar .navbar-brand.kg-brand{
+  display: inline-flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .35rem 0;
+  text-decoration: none;
+}
+
+.kg-brand-sticker{
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.55), rgba(255,255,255,0) 45%),
+    linear-gradient(180deg, var(--kg-gold-2), var(--kg-gold));
+  border: 1px solid rgba(0,0,0,.18);
+  box-shadow: 0 14px 30px rgba(0,0,0,.35);
+  color: rgba(20,14,8,.92);
+}
+.kg-brand-sticker svg{ display:block; }
+
+.kg-brand-text{
+  font-family: "Playfair Display","Times New Roman",serif;
+  font-weight: 800;
+  letter-spacing: .10em;
+  font-size: 1.05rem;
+
+  background: linear-gradient(90deg, var(--kg-gold-2), #ffffff, var(--kg-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+
+  text-shadow: 0 2px 10px rgba(0,0,0,.45);
+}
+
+.kg-navbar .navbar-brand.kg-brand:hover .kg-brand-sticker{ filter: brightness(1.06); }
+.kg-navbar .navbar-brand.kg-brand:hover .kg-brand-text{ filter: brightness(1.05); }
+
+@media (max-width: 420px){
+  .kg-brand-sticker{ width: 34px; height: 34px; }
+  .kg-brand-text{ font-size: .98rem; letter-spacing: .08em; }
+}
+
+/* -------------------------
+   6) CTA BUTTON: Give a Gift (support BOTH class names)
+   ------------------------- */
+.kg-btn-give,
+.btn-give{
+  background: linear-gradient(180deg, var(--kg-gold-2), var(--kg-gold));
+  border: 1px solid rgba(200,169,106,.55);
+  border-radius: 999px;
+  padding: .62rem 1.10rem;
+  font-weight: 950;
+  color: #1b140a !important;
+  box-shadow: 0 16px 44px rgba(0,0,0,.22);
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+}
+.kg-btn-give:hover,
+.btn-give:hover{ filter: brightness(1.05); transform: translateY(-1px); }
+
+/* -------------------------
+   7) FOOTER
+   ------------------------- */
+.kg-footer{
+  padding: 18px 0;
+  border-top: 1px solid rgba(255,255,255,.10);
+  background: rgba(12,12,14,.40);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.kg-footer-inner{
+  display:flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items:center;
+  font-weight: 800;
+  color: rgba(255,255,255,.72);
+}
+.kg-footer-quote{
+  font-weight: 650;
+  color: rgba(255,255,255,.62);
+}
+@media (max-width: 768px){
+  .kg-footer-inner{ flex-direction: column; align-items: flex-start; }
+}
+
+/* -------------------------
+   8) PAGE BACKGROUNDS
+   ------------------------- */
+
+/* Needs listing/details (if you use this elsewhere) */
+body.needs-body{
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255,255,255,0.04), transparent 55%),
+    linear-gradient(180deg, rgba(0,0,0,0.72), rgba(0,0,0,0.60)),
+    url("/images/needs/background.jpg") center / cover no-repeat fixed !important;
+}
+
+/* Needs/Create (your file is /images/needs/needs-background.jpg) */
+body.needs-create-page{
+  background-image:
+    radial-gradient(1200px 700px at 30% 20%, rgba(255,255,255,0.12), rgba(255,255,255,0.60) 55%, rgba(255,255,255,0.78) 100%),
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.62)),
+    url("/images/needs/needs-background.jpg") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+}
+
+body.needs-body .site-main,
+body.needs-create-page .site-main{
+  background: transparent !important;
+}
+
+/* Stories clean (optional class) */
+body.stories-body{
+  background:
+    radial-gradient(circle at 18% 12%, rgba(200,169,106,.10), transparent 48%),
+    radial-gradient(circle at 82% 18%, rgba(0,0,0,.04), transparent 55%),
+    linear-gradient(180deg, var(--kg-ivory) 0%, var(--kg-ivory-2) 60%, #ffffff 100%) !important;
+  color: var(--kg-ink) !important;
+}
+
+/* Mobile background stability */
+@media (max-width: 991.98px){
+  body.needs-body{ background-attachment: scroll !important; }
+}
+/* Progress bar visibility (dark hero area) */
+.kg-progress-track {
+  background: rgba(255,255,255,.14) !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.kg-progress-fill {
+  background: linear-gradient(90deg, #F3D9A7 0%, #E6C37A 100%) !important;
+  height: 100%;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08) inset;
+}
+
+/* The thin separator line under the bar */
+.kg-hero-divider,
+.kg-divider {
+  border-top: 1px solid rgba(255,255,255,.22) !important;
+}
+/* ===== Universal KG buttons (work on light + dark) ===== */
+.kg-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  padding:.72rem 1.05rem;
+  font-weight:950;
+  text-decoration:none;
+  border:1px solid rgba(15,23,42,.14);
+  background: rgba(255,255,255,.85);
+  color:#0b1220 !important;
+  box-shadow: 0 12px 28px rgba(15,23,42,.10);
+  transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+}
+.kg-btn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+
+.kg-btn-ghost{
+  background: rgba(255,255,255,.65);
+  border-color: rgba(15,23,42,.14);
+  color:#0b1220 !important;
+}
+
+.kg-btn-gold{
+  background: linear-gradient(180deg, var(--kg-gold-2), var(--kg-gold));
+  border-color: rgba(200,169,106,.60);
+  color:#1b140a !important;
+}
+/* ===== Universal buttons used across pages ===== */
+.kg-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  padding:.72rem 1.05rem;
+  font-weight:950;
+  text-decoration:none;
+  border:1px solid rgba(15,23,42,.14);
+  background: rgba(255,255,255,.90);
+  color:#0b1220;
+  box-shadow: 0 12px 28px rgba(15,23,42,.10);
+  transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+}
+
+.kg-btn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+
+.kg-btn-gold{
+  background: linear-gradient(180deg, #F3D9A7 0%, #E6C37A 100%);
+  border-color: rgba(200,169,106,.60);
+  color:#1b140a;
+}
+
+.kg-btn-ghost{
+  background: rgba(15,23,42,.04);
+  border-color: rgba(15,23,42,.12);
+  color:#0b1220;
+}

@@ -1,0 +1,394 @@
+@model UpliftBridge.Models.FundSuccessViewModel
+
+@{
+    ViewData["Title"] = "Thank you";
+
+    // Hard guards (never trust view model blindly)
+    var need = Model?.Need;
+    var order = Model?.Order;
+
+    if (need == null)
+    {
+        <div class="container mt-4">
+            <div class="alert alert-danger">
+                Something went wrong — we couldn’t load the need details.
+            </div>
+            <a asp-controller="Needs" asp-action="Index" class="btn btn-outline-primary">Back to needs</a>
+        </div>
+        return;
+    }
+
+    // Clamp percent for display + CSS safety
+    var pctRaw = need.PercentFunded;
+    var pct = pctRaw < 0 ? 0 : (pctRaw > 100 ? 100 : pctRaw);
+
+    // Safe remaining (never show negative)
+    var remainingRaw = need.RemainingAmount;
+    var remaining = remainingRaw < 0 ? 0 : remainingRaw;
+
+    var isFullyFunded = need.IsFullyFunded;
+
+    // Safe numbers for display (avoid negative / weird states)
+    decimal pledged = 0m;
+    decimal platformPaid = 0m;
+
+    if (order != null)
+    {
+        pledged = order.PledgedGiftAmount < 0 ? 0 : order.PledgedGiftAmount;
+        platformPaid = order.PlatformSupportPaid < 0 ? 0 : order.PlatformSupportPaid;
+    }
+
+    // No Request / Scheme usage — relative URL only
+    var shareUrl =
+        Url.Action("Details", "Needs", new { id = need.Id })
+        ?? $"/Needs/Details/{need.Id}";
+
+    var shareText =
+$@"I supported UpliftBridge to help fund a need: {need.Title}.
+If you want to help too, you can view the need here: {shareUrl}";
+}
+
+@section Styles{
+<style>
+    .kg-shell{
+        padding: 3.4rem 0 4rem;
+        background: linear-gradient(180deg, rgba(34,197,94,0.07), rgba(255,255,255,0));
+    }
+    .kg-card{
+        background:#fff;
+        border: 1px solid #eef2f7;
+        border-radius: 24px;
+        box-shadow: 0 18px 45px rgba(15,23,42,0.10);
+    }
+    .kg-pad{ padding: 22px; }
+    @@media (min-width: 992px){ .kg-pad{ padding: 30px; } }
+
+    .kg-badge{
+        display:inline-flex;
+        align-items:center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        font-weight: 900;
+        background: rgba(34,197,94,0.12);
+        color: #166534;
+        border: 1px solid rgba(34,197,94,0.25);
+        letter-spacing: .02em;
+    }
+    .kg-title{
+        font-family: 'Playfair Display', serif;
+        font-size: 2rem;
+        line-height: 1.12;
+        margin: 14px 0 10px;
+        color:#0f172a;
+        letter-spacing: -0.01em;
+    }
+    .kg-lead{
+        color:#334155;
+        font-size: 1.05rem;
+        line-height: 1.6;
+    }
+    .kg-permission{
+        margin-top: 10px;
+        color:#64748b;
+        font-size: .95rem;
+        line-height: 1.5;
+    }
+    .divider{
+        height: 1px;
+        background: #eef2f7;
+        margin: 18px 0;
+    }
+    .block{
+        border: 1px solid #eef2f7;
+        background: #fafbff;
+        border-radius: 18px;
+        padding: 14px;
+        text-align:left;
+    }
+    .row2{
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    @@media (max-width: 575.98px){
+        .row2{ grid-template-columns: 1fr; }
+    }
+    .k{
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .10em;
+        text-transform: uppercase;
+        color:#64748b;
+        margin-bottom: 6px;
+    }
+    .v{
+        font-weight: 950;
+        color:#0f172a;
+        font-size: 1rem;
+        word-break: break-word;
+    }
+    .progress{
+        height: 10px;
+        border-radius: 999px;
+        background:#e5e7eb;
+        overflow:hidden;
+        margin-top: 10px;
+    }
+    .progress > div{
+        height:100%;
+        border-radius: 999px;
+        background: #16a34a;
+        width: 0%;
+    }
+    .tiny{
+        color:#64748b;
+        font-size: .9rem;
+        line-height: 1.45;
+    }
+    .btn-pill{
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-weight: 950;
+        letter-spacing: .01em;
+    }
+    .warn{
+        border: 1px solid rgba(245,158,11,0.25);
+        background: rgba(245,158,11,0.08);
+        color:#92400e;
+        border-radius: 18px;
+        padding: 12px;
+        text-align:left;
+    }
+    .receipt-line{
+        display:flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px dashed #e5e7eb;
+    }
+    .receipt-line:last-child{ border-bottom: none; padding-bottom: 0; }
+    .receipt-line span{
+        color:#64748b;
+        font-weight: 750;
+        font-size: .92rem;
+    }
+    .receipt-line strong{
+        color:#0f172a;
+        font-weight: 950;
+    }
+    .sharebox{
+        margin-top: 14px;
+        text-align:left;
+        border: 1px dashed #e5e7eb;
+        border-radius: 18px;
+        padding: 12px;
+        background:#fff;
+    }
+    .sharebox textarea{
+        width: 100%;
+        min-height: 92px;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        padding: 10px 12px;
+        outline: none;
+        resize: vertical;
+        color:#0f172a;
+    }
+</style>
+}
+
+<div class="kg-shell">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+
+                <div class="kg-card kg-pad text-center">
+
+                    <div class="kg-badge">✅ Platform support confirmed</div>
+
+                    <h1 class="kg-title">Thank you for helping quietly.</h1>
+
+                    <p class="kg-lead mb-2">
+                        Your platform support helps UpliftBridge stay reliable and safe.
+                        The actual donation for <strong>@need.Title</strong> is completed on the official payment link (next step).
+                    </p>
+
+                    <div class="kg-permission">
+                        No public posting. No pressure. You can stop here — or complete the official donation if you’re ready.
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Need progress (honest: this reflects confirmed funds only) -->
+                    <div class="block mx-auto" style="max-width: 620px;">
+                        <div class="row2">
+                            <div>
+                                <div class="k">Raised so far</div>
+                                <div class="v">@need.AmountRaised.ToString("C0")</div>
+                                <div class="tiny">Confirmed funds only</div>
+                            </div>
+                            <div>
+                                <div class="k">Goal</div>
+                                <div class="v">@need.GoalAmount.ToString("C0")</div>
+                            </div>
+
+                            @if (!isFullyFunded && need.GoalAmount > 0)
+                            {
+                                <div style="grid-column: 1 / -1;">
+                                    <div class="k">Still needed</div>
+                                    <div class="v">@remaining.ToString("C0")</div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="progress">
+                            <div style="width:@pct%"></div>
+                        </div>
+                        <div class="tiny mt-2">@pct% funded</div>
+
+                        @if (isFullyFunded)
+                        {
+                            <div class="tiny mt-2">✅ This need has reached its goal.</div>
+                        }
+                    </div>
+
+                    <div class="warn mx-auto mt-3" style="max-width: 620px;">
+                        <div class="k" style="color:#92400e;">Important</div>
+                        <div style="font-weight:800;">
+                            UpliftBridge does not claim your donation was received until it happens on the official payment site.
+                            This protects donors, recipients, and the integrity of the platform.
+                        </div>
+                    </div>
+
+                    @if (order != null)
+                    {
+                        <div class="block mx-auto mt-3" style="max-width: 620px;">
+                            <div class="k">Receipt</div>
+
+                            <div class="receipt-line">
+                                <span>Order ID</span>
+                                <strong>#@order.Id</strong>
+                            </div>
+
+                            <div class="receipt-line">
+                                <span>Platform support (paid)</span>
+                                <strong>@platformPaid.ToString("C2")</strong>
+                            </div>
+
+                            <div class="receipt-line">
+                                <span>Planned gift (offsite intent)</span>
+                                <strong>@pledged.ToString("C2")</strong>
+                            </div>
+
+                            <div class="receipt-line">
+                                <span>Stripe PaymentIntent</span>
+                                <strong>@(string.IsNullOrWhiteSpace(order.StripePaymentIntentId) ? "—" : order.StripePaymentIntentId)</strong>
+                            </div>
+
+                            <div class="receipt-line">
+                                <span>Status</span>
+                                <strong>@order.PaymentStatus</strong>
+                            </div>
+
+                            <div class="receipt-line">
+                                <span>Offsite status</span>
+                                <strong>@order.OffsiteStatus</strong>
+                            </div>
+
+                            <div class="receipt-line">
+                                <span>Time</span>
+                                <strong>@order.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd h:mm tt")</strong>
+                            </div>
+
+                            <div class="tiny mt-2">
+                                Platform support is confirmed. Offsite donation is separate and must be completed on the official site.
+                            </div>
+                        </div>
+                    }
+
+                    <div class="divider"></div>
+
+                    <div class="d-flex justify-content-center flex-wrap gap-2">
+                        <a asp-controller="Needs" asp-action="CompleteDonation" asp-route-id="@need.Id"
+                           class="btn btn-primary btn-pill">
+                            Complete official donation
+                        </a>
+
+                        <a asp-controller="Needs" asp-action="Details" asp-route-id="@need.Id"
+                           class="btn btn-outline-primary btn-pill">
+                            Back to need
+                        </a>
+
+                        <a asp-controller="Needs" asp-action="Index" class="btn btn-link btn-pill">
+                            See other needs
+                        </a>
+                    </div>
+
+                    <div class="sharebox mx-auto" style="max-width: 620px;">
+                        <div class="k">Optional</div>
+                        <div class="v" style="font-size:1rem;">Share quietly (only if you want)</div>
+                        <div class="tiny mt-1">
+                            Sharing can help reach the right people — without turning it into a viral guilt machine.
+                        </div>
+
+                        <textarea id="kgShareText">@shareText</textarea>
+
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <button type="button" class="btn btn-outline-secondary btn-pill" id="copyBtn">
+                                Copy message
+                            </button>
+                            <a class="btn btn-outline-secondary btn-pill"
+                               href="mailto:?subject=UpliftBridge%20%E2%80%94%20a%20quiet%20need&body="
+                               id="emailShare">
+                                Email
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="tiny mt-3">
+                        If something ever feels off, you’ll be able to report it calmly — no drama, just safety.
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+<script>
+    (function(){
+        const ta = document.getElementById('kgShareText');
+        const copyBtn = document.getElementById('copyBtn');
+        const emailShare = document.getElementById('emailShare');
+
+        function updateMailto(){
+            if (!emailShare || !ta) return;
+            const body = encodeURIComponent(ta.value || "");
+            const subject = encodeURIComponent("UpliftBridge — a quiet need");
+            emailShare.href = "mailto:?subject=" + subject + "&body=" + body;
+        }
+
+        updateMailto();
+
+        if (copyBtn && ta) {
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(ta.value || "");
+                    copyBtn.textContent = "Copied ✓";
+                } catch (e) {
+                    ta.focus();
+                    ta.select();
+                    document.execCommand('copy');
+                    copyBtn.textContent = "Copied ✓";
+                }
+                setTimeout(() => copyBtn.textContent = "Copy message", 1400);
+            });
+
+            ta.addEventListener('input', updateMailto);
+        }
+    })();
+</script>
+}

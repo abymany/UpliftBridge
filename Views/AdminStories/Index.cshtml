@@ -1,0 +1,79 @@
+@model IEnumerable<UpliftBridge.Models.Story>
+
+@{
+    ViewData["Title"] = "Admin — Stories";
+    var key = (string?)ViewBag.AdminKey;
+}
+
+<div class="kg-wrap kg-shell">
+    <div class="kg-glass">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <div class="kg-kicker">ADMIN</div>
+                <h1 class="kg-title">Stories</h1>
+                <p class="kg-muted mb-0">Create, edit, and publish stories.</p>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+                <partial name="_AdminLinks" />
+                <a class="kg-btn kg-btn-gold" asp-action="Create" asp-route-key="@key">+ New Story</a>
+            </div>
+        </div>
+
+        <hr style="border-color: rgba(255,255,255,.12);" />
+
+        <div class="kg-card-light">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Published</th>
+                        <th style="width: 220px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model != null)
+                {
+                    foreach (var s in Model)
+                    {
+                        <tr>
+                            <td>@s.Id</td>
+                            <td>@s.Title</td>
+                            <td>@s.Category</td>
+                            <td>
+                                @if (s.IsPublished)
+                                {
+                                    <span class="badge bg-success">Yes</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">No</span>
+                                }
+                            </td>
+                            <td class="d-flex gap-2 flex-wrap">
+                                <a class="btn btn-sm btn-outline-primary"
+                                   asp-action="Edit"
+                                   asp-route-id="@s.Id"
+                                   asp-route-key="@key">Edit</a>
+
+                                <form method="post"
+                                      asp-action="TogglePublish"
+                                      asp-route-id="@s.Id"
+                                      asp-route-key="@key"
+                                      class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-dark">
+                                        @(s.IsPublished ? "Unpublish" : "Publish")
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

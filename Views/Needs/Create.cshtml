@@ -1,0 +1,508 @@
+@model UpliftBridge.Models.NeedCreateViewModel
+@using UpliftBridge.Models
+
+@{
+    ViewData["Title"] = "Post a Need";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["BodyClass"] = "needs-create-page";
+}
+
+@section Styles {
+<style>
+  .kg-section-label{
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: .8rem;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .kg-page-title{
+    font-family: "Playfair Display", serif;
+    font-weight: 700;
+    font-size: 2.65rem;
+    line-height: 1.12;
+    color: #0b1220;
+    text-shadow: 0 1px 0 rgba(255,255,255,.65);
+    margin-bottom: 0.9rem;
+  }
+  .kg-page-lead{
+    font-size: 1.02rem;
+    color: rgba(15,23,42,.78);
+    max-width: 720px;
+    font-weight: 650;
+    text-shadow: 0 1px 0 rgba(255,255,255,.55);
+  }
+  .kg-card{
+    border-radius: 24px;
+    background: rgba(255,255,255,0.94);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+    padding: 2.4rem 2.15rem;
+    margin-bottom: 2rem;
+  }
+  .kg-card-soft{
+    border-radius: 24px;
+    background: rgba(255,255,255,0.90);
+    border: 1px solid rgba(15, 23, 42, 0.07);
+    padding: 2rem 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.10);
+  }
+  .form-label{ font-weight: 850; color: #0b1220; }
+  .form-text{ font-size: .88rem; color: rgba(15,23,42,.60); font-weight: 650; }
+  .text-danger { font-weight: 700; }
+
+  .kg-pill{
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: .35rem .85rem;
+    font-size: .78rem;
+    font-weight: 900;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+    background: rgba(200,169,106,.14);
+    color: rgba(90,64,22,.92);
+    border: 1px solid rgba(200,169,106,.35);
+  }
+  .kg-list-check{ list-style: none; padding-left: 0; }
+  .kg-list-check li{
+    position: relative;
+    padding-left: 1.6rem;
+    margin-bottom: .65rem;
+    font-size: .95rem;
+    color: rgba(15,23,42,.78);
+    font-weight: 700;
+  }
+  .kg-list-check li::before{
+    content: "✓";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: #16a34a;
+    font-weight: 900;
+  }
+  .kg-note{ font-size: .85rem; color: rgba(15,23,42,.58); font-weight: 650; }
+
+  .kg-consent-box{
+    border-radius: 18px;
+    background: rgba(15,23,42,0.04);
+    border: 1px solid rgba(15,23,42,0.06);
+    padding: 1rem 1.25rem;
+    font-size: .9rem;
+    color: rgba(15,23,42,.72);
+    font-weight: 650;
+  }
+
+  .kg-badge-soft{
+    padding: .25rem .75rem;
+    border-radius: 999px;
+    font-size: .76rem;
+    background: rgba(200,169,106,.16);
+    color: rgba(90,64,22,.92);
+    font-weight: 900;
+    border: 1px solid rgba(200,169,106,.28);
+  }
+
+  .kg-chip-row{ display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem; }
+  .kg-chip{
+    font-size: .78rem;
+    padding: .22rem .65rem;
+    border-radius: 999px;
+    background: rgba(15,23,42,0.05);
+    border: 1px solid rgba(15,23,42,0.06);
+    color: rgba(15,23,42,.72);
+    font-weight: 800;
+  }
+
+  .kg-submit{
+    border-radius: 999px;
+    padding: .95rem 1.25rem;
+    font-weight: 950;
+    border: 1px solid rgba(200,169,106,.55);
+    background: linear-gradient(180deg, #e6d3a2, #c8a96a);
+    color: #1b140a;
+    box-shadow: 0 18px 44px rgba(0,0,0,.18);
+  }
+  .kg-submit:hover{ filter: brightness(1.05); transform: translateY(-1px); }
+</style>
+}
+
+<div class="py-5">
+  <div class="container">
+
+    <div class="row mb-4">
+      <div class="col-lg-9">
+        <div class="kg-section-label mb-2">Post a need</div>
+        <h1 class="kg-page-title">Tell the world what one quiet gift could change.</h1>
+
+        <p class="kg-page-lead">
+          Use this page to share a clear, honest story. Think of it as writing a letter
+          to the person who might help — whether they live down the street or on the other side of the world.
+        </p>
+
+        <p class="kg-page-lead mt-2" style="font-size:.95rem;">
+          Please only post real needs that you would feel comfortable explaining in person.
+        </p>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-7 mb-4">
+
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+          @Html.AntiForgeryToken()
+
+          <!-- IMPORTANT: show top errors -->
+          <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+          <div class="kg-card">
+            <h2 class="h5 mb-3" style="font-weight:900;">About this need</h2>
+
+            <div class="mb-3">
+              <label class="form-label" asp-for="Title"></label>
+              <input class="form-control" asp-for="Title" />
+              <span class="text-danger" asp-validation-for="Title"></span>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" asp-for="ForWhom"></label>
+              <input class="form-control" asp-for="ForWhom" />
+              <span class="text-danger" asp-validation-for="ForWhom"></span>
+              <div class="form-text">First name and relationship only. Avoid full legal names and full addresses.</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" asp-for="AgeRange"></label>
+              <select class="form-select" asp-for="AgeRange">
+                <option value="">Choose one</option>
+                <option>Child (under 13)</option>
+                <option>Teen (13–17)</option>
+                <option>Young adult (18–25)</option>
+                <option>Adult (26+)</option>
+              </select>
+              <span class="text-danger" asp-validation-for="AgeRange"></span>
+              <div class="form-text">This helps donors understand context without exposing identity.</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" asp-for="Story"></label>
+              <textarea class="form-control" asp-for="Story" rows="5"></textarea>
+              <span class="text-danger" asp-validation-for="Story"></span>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" asp-for="LongTermDream"></label>
+              <textarea class="form-control" asp-for="LongTermDream" rows="3"></textarea>
+              <span class="text-danger" asp-validation-for="LongTermDream"></span>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" asp-for="TriedAlready"></label>
+              <textarea class="form-control" asp-for="TriedAlready" rows="3"></textarea>
+              <span class="text-danger" asp-validation-for="TriedAlready"></span>
+            </div>
+          </div>
+
+          <div class="kg-card">
+            <h2 class="h5 mb-3" style="font-weight:900;">Type of need & location</h2>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" asp-for="Category"></label>
+                <select class="form-select" asp-for="Category" asp-items="Html.GetEnumSelectList<NeedCategory>()">
+                  <option value="">Choose one</option>
+                </select>
+                <span class="text-danger" asp-validation-for="Category"></span>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" asp-for="CityCountry"></label>
+                <input class="form-control" asp-for="CityCountry" />
+                <span class="text-danger" asp-validation-for="CityCountry"></span>
+              </div>
+            </div>
+
+            <hr class="my-4" />
+
+            <h6 class="mb-2" style="font-weight:900;">What exactly are you requesting?</h6>
+
+            <!-- Item 1 REQUIRED -->
+            <div class="mb-2">
+              <label class="form-label small">Item 1 <span class="text-danger">*</span></label>
+              <div class="row g-2">
+                <div class="col-md-5">
+                  <input class="form-control" asp-for="Items[0].Name" placeholder="Item name (e.g., laptop)" />
+                  <span class="text-danger" asp-validation-for="Items[0].Name"></span>
+                </div>
+                <div class="col-md-3">
+                  <input class="form-control" asp-for="Items[0].Cost" placeholder="Estimated cost" />
+                  <span class="text-danger" asp-validation-for="Items[0].Cost"></span>
+                </div>
+                <div class="col-md-4">
+                  <input class="form-control" asp-for="Items[0].Link" placeholder="Link (optional)" />
+                  <span class="text-danger" asp-validation-for="Items[0].Link"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 2 OPTIONAL -->
+            <div class="mb-2">
+              <label class="form-label small">Item 2 (optional)</label>
+              <div class="row g-2">
+                <div class="col-md-5">
+                  <input class="form-control kg-optional-item" asp-for="Items[1].Name" placeholder="Item name" />
+                  <span class="text-danger" asp-validation-for="Items[1].Name"></span>
+                </div>
+                <div class="col-md-3">
+                  <input class="form-control kg-optional-item" asp-for="Items[1].Cost" placeholder="Estimated cost" />
+                  <span class="text-danger" asp-validation-for="Items[1].Cost"></span>
+                </div>
+                <div class="col-md-4">
+                  <input class="form-control kg-optional-item" asp-for="Items[1].Link" placeholder="Link (optional)" />
+                  <span class="text-danger" asp-validation-for="Items[1].Link"></span>
+                  <div class="form-text">Leave blank if you don’t need this.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 3 OPTIONAL -->
+            <div class="mb-3">
+              <label class="form-label small">Item 3 (optional)</label>
+              <div class="row g-2">
+                <div class="col-md-5">
+                  <input class="form-control kg-optional-item" asp-for="Items[2].Name" placeholder="Item name" />
+                  <span class="text-danger" asp-validation-for="Items[2].Name"></span>
+                </div>
+                <div class="col-md-3">
+                  <input class="form-control kg-optional-item" asp-for="Items[2].Cost" placeholder="Estimated cost" />
+                  <span class="text-danger" asp-validation-for="Items[2].Cost"></span>
+                </div>
+                <div class="col-md-4">
+                  <input class="form-control kg-optional-item" asp-for="Items[2].Link" placeholder="Link (optional)" />
+                  <span class="text-danger" asp-validation-for="Items[2].Link"></span>
+                  <div class="form-text">Leave blank if you don’t need this.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="kg-card">
+            <h2 class="h5 mb-3" style="font-weight:900;">Money, timing & urgency</h2>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" asp-for="GoalAmount"></label>
+                <input class="form-control" asp-for="GoalAmount" />
+                <span class="text-danger" asp-validation-for="GoalAmount"></span>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" asp-for="Deadline"></label>
+                <input class="form-control" asp-for="Deadline" />
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label" asp-for="Urgency"></label>
+              <select class="form-select" asp-for="Urgency">
+                <option value="">Choose one</option>
+                <option value="NoDeadline">No deadline, any time helps</option>
+                <option value="Month">Needed within a month</option>
+                <option value="TwoWeeks">Needed within two weeks</option>
+                <option value="Emergency">Emergency (we may contact you to verify)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="kg-card">
+            <h2 class="h5 mb-3" style="font-weight:900;">Verification</h2>
+
+            <div class="kg-consent-box">
+              <strong>Verification happens after submission.</strong>
+              <p class="kg-note mt-1">
+                Our team reviews every need. Verification levels are assigned by UpliftBridge,
+                not by the person posting.
+              </p>
+            </div>
+
+            <div class="mb-3 mt-3">
+              <label class="form-label" asp-for="VerificationNote"></label>
+              <input class="form-control" asp-for="VerificationNote" />
+            </div>
+
+            <hr class="my-4" />
+
+            <h6 class="mb-2" style="font-weight:900;">Institution verification (optional, recommended)</h6>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" asp-for="InstitutionType"></label>
+                <select class="form-select" asp-for="InstitutionType">
+                  <option value="">Choose one</option>
+                  <option>School</option>
+                  <option>College</option>
+                  <option>University</option>
+                  <option>Hospital</option>
+                  <option>Clinic</option>
+                  <option>Nonprofit</option>
+                  <option>Community center</option>
+                  <option>Sports club</option>
+                  <option>Store / vendor</option>
+                  <option>Other</option>
+                </select>
+                <div class="form-text">Pick the closest match. If “Other”, specify in the name field.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" asp-for="InstitutionName"></label>
+                <input class="form-control" asp-for="InstitutionName" />
+              </div>
+            </div>
+
+            <div class="form-check mt-3">
+              <input class="form-check-input" asp-for="PreferDirectToInstitution" id="directPayToggle" />
+              <label class="form-check-label" for="directPayToggle">
+                Prefer donors to pay the institution directly (recommended when available)
+              </label>
+            </div>
+
+            <div class="mt-3" id="payLinkWrap">
+              <label class="form-label" asp-for="InstitutionPaymentLink"></label>
+              <input class="form-control" asp-for="InstitutionPaymentLink" id="institutionPaymentLinkInput" />
+              <div class="form-text">Only use an official payment page or invoice link (must be from the institution).</div>
+              <span class="text-danger" asp-validation-for="InstitutionPaymentLink"></span>
+            </div>
+
+            <hr class="my-4" />
+
+            <div class="mb-0">
+              <label class="form-label" asp-for="PayTo"></label>
+              <input class="form-control" asp-for="PayTo" />
+              <div class="form-text">Shown publicly as “Pay to”. Keep it short.</div>
+            </div>
+          </div>
+
+          <div class="kg-card">
+            <h2 class="h5 mb-3" style="font-weight:900;">Contact for follow-up (private)</h2>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" asp-for="ContactEmail"></label>
+                <input class="form-control" asp-for="ContactEmail" />
+                <span class="text-danger" asp-validation-for="ContactEmail"></span>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" asp-for="ContactPhone"></label>
+                <input class="form-control" asp-for="ContactPhone" />
+              </div>
+            </div>
+          </div>
+
+          <div class="kg-card">
+            <h2 class="h5 mb-3" style="font-weight:900;">Photos (optional)</h2>
+
+            <label class="form-label fw-semibold">Upload photos (up to 6)</label>
+            <input asp-for="Photos" type="file" class="form-control" multiple accept="image/*" />
+            <span class="text-muted small">JPG/PNG/WEBP. Max 6 photos.</span>
+
+            <span class="text-danger d-block mt-1" asp-validation-for="Photos"></span>
+          </div>
+
+          <div class="kg-card">
+            <div class="kg-consent-box mb-3">
+              <div class="form-check mb-2">
+                <input class="form-check-input" asp-for="HonestyPledge" />
+                <label class="form-check-label" asp-for="HonestyPledge">
+                  I confirm that everything shared here is true and posted with respect for donors and the community.
+                </label>
+              </div>
+              <span class="text-danger" asp-validation-for="HonestyPledge"></span>
+            </div>
+
+            <button type="submit" class="kg-submit w-100">Submit this need for review</button>
+            <p class="kg-note mt-3 mb-0">We move slowly with honesty. Thank you for trusting this space.</p>
+          </div>
+        </form>
+      </div>
+
+      <div class="col-lg-5 mb-4">
+        <div class="kg-card-soft mb-4">
+          <div class="kg-pill mb-3">For posters of needs</div>
+          <h3 class="h5 mb-3" style="font-weight:900;">What helps donors trust your request</h3>
+          <ul class="kg-list-check mb-3">
+            <li>Share specific details (school, course, exam, sport, etc.).</li>
+            <li>Say what you already tried before asking for help.</li>
+            <li>Show exact items/costs and why each is needed.</li>
+            <li>Connect the gift to a bigger future.</li>
+            <li>Keep the tone respectful and calm.</li>
+          </ul>
+          <p class="kg-note mb-0">Truth + detail beats emotional writing every time.</p>
+        </div>
+
+        <div class="kg-card-soft mb-4" style="background:linear-gradient(135deg, rgba(224,242,254,.9), rgba(254,243,199,.9));">
+          <div class="kg-pill mb-3">Our responsibility to donors</div>
+          <h3 class="h5 mb-3" style="font-weight:900;">How we protect trust</h3>
+          <ul class="kg-list-check mb-0">
+            <li>We remove requests that feel dishonest, harmful, or unsafe.</li>
+            <li>We prioritize needs that are clear and verifiable.</li>
+            <li>We guide gifts toward real, item-based help where possible.</li>
+          </ul>
+        </div>
+
+        <div class="kg-card-soft">
+          <span class="kg-badge-soft mb-2 d-inline-block">Why your story matters</span>
+          <p class="mt-2" style="font-size:.95rem; color:rgba(15,23,42,.78); font-weight:700;">
+            One quiet gift today could support a future doctor, teacher, or athlete.
+          </p>
+          <p class="fst-italic" style="font-size:.95rem; color:rgba(15,23,42,.86); font-weight:750;">
+            “I became who I am because someone I did not know helped me through UpliftBridge.”
+          </p>
+          <div class="kg-chip-row">
+            <span class="kg-chip">Dignity</span>
+            <span class="kg-chip">Honesty</span>
+            <span class="kg-chip">Clarity</span>
+            <span class="kg-chip">Future</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+      (function () {
+        const toggle = document.getElementById('directPayToggle');
+        const wrap = document.getElementById('payLinkWrap');
+        const input = document.getElementById('institutionPaymentLinkInput');
+
+        if (!toggle || !wrap || !input) return;
+
+        function sync() {
+          const on = toggle.checked;
+          wrap.style.display = on ? '' : 'none';
+          input.disabled = !on; // IMPORTANT: disable when hidden
+          if (!on) input.value = '';
+        }
+
+        toggle.addEventListener('change', sync);
+        sync();
+      })();
+    </script>
+    <script>
+  (function () {
+    const TRASH = new Set(["na","n/a","none","-","--","null","0"]);
+    document.querySelectorAll(".kg-optional-item").forEach(el => {
+      el.addEventListener("blur", () => {
+        const v = (el.value || "").trim().toLowerCase();
+        if (TRASH.has(v)) el.value = "";
+      });
+    });
+  })();
+</script>
+
+}

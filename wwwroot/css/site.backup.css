@@ -1,0 +1,1854 @@
+/* UpliftBridge custom styles */
+
+:root {
+    --kg-bg: #f7f5ff;
+    --kg-primary: #fbcf47;
+    --kg-primary-deep: #f5a623;
+    --kg-accent: #5b7cff;
+    --kg-soft-pink: #ffe5ef;
+    --kg-text-main: #222222;
+    --kg-text-muted: #6c757d;
+    --kg-radius-xl: 1.5rem;
+    --kg-shadow-soft: 0 18px 40px rgba(32, 44, 89, 0.12);
+}
+
+body {
+    font-family: "Nunito", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--kg-text-main);
+}
+
+/* Headings use Playfair for a softer, spiritual feel */
+h1, h2, h3, .kg-hero-title, .kg-section-title {
+    font-family: "Playfair Display", "Times New Roman", serif;
+}
+
+/* HERO */
+
+.kg-hero {
+    min-height: 70vh;
+}
+
+.kg-pill {
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(167, 36, 36, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--kg-text-muted);
+}
+
+.kg-pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--kg-accent), var(--kg-primary));
+}
+
+.kg-hero-title {
+    font-size: clamp(2.4rem, 3.2vw + 1.8rem, 3.3rem);
+    line-height: 1.1;
+}
+
+.kg-highlight {
+    background: linear-gradient(120deg, #ffce73, #ff9a9e);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.kg-hero-subtitle {
+    font-size: 1rem;
+    color: var(--kg-text-muted);
+}
+
+.kg-hero-note {
+    max-width: 26rem;
+}
+
+/* ORBIT ILLUSTRATION */
+
+.kg-orbit {
+    position: relative;
+    height: 320px;
+    border-radius: 2rem;
+    background: radial-gradient(circle at top left, #ffe9f0, #f7f5ff 55%, #e7f3ff);
+    box-shadow: var(--kg-shadow-soft);
+    overflow: hidden;
+}
+
+.kg-orbit-glow {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(252, 242, 167, 0.72), transparent 55%),
+        radial-gradient(circle at 80% 80%, rgba(174, 200, 255, 0.7), transparent 55%);
+    opacity: 0.9;
+    pointer-events: none;
+}
+
+.kg-orbit-center {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 18px 40px rgba(137, 148, 205, 0.4);
+    z-index: 3;
+    animation: kg-float 7s ease-in-out infinite;
+}
+
+.kg-orbit-center-title {
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    color: var(--kg-accent);
+}
+
+.kg-orbit-center-subtitle {
+    font-size: 0.9rem;
+    color: var(--kg-text-main);
+}
+
+/* Orbit cards */
+
+.kg-orbit-card {
+    position: absolute;
+    width: 170px;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 12px 30px rgba(104, 115, 190, 0.25);
+    padding: 0.6rem 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    z-index: 4;
+    backdrop-filter: blur(10px);
+    font-size: 0.88rem;
+}
+
+.kg-orbit-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background: linear-gradient(135deg, #fff6d3, #ffd3f2);
+}
+
+.kg-orbit-label {
+    margin: 0;
+    color: var(--kg-text-main);
+}
+
+/* Positions with slightly different animation timing */
+
+.kg-orbit-card--top-left {
+    top: 35px;
+    left: 20px;
+    animation: kg-float 9s ease-in-out infinite;
+}
+
+.kg-orbit-card--top-right {
+    top: 40px;
+    right: 18px;
+    animation: kg-float 8s ease-in-out infinite 0.7s;
+}
+
+.kg-orbit-card--bottom-left {
+    bottom: 32px;
+    left: 30px;
+    animation: kg-float 10s ease-in-out infinite 0.3s;
+}
+
+.kg-orbit-card--bottom-right {
+    bottom: 25px;
+    right: 28px;
+    animation: kg-float 11s ease-in-out infinite 0.9s;
+}
+
+@keyframes kg-float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Sections & cards */
+
+.kg-section {
+    position: relative;
+}
+
+.kg-section-title {
+    font-size: 1.6rem;
+}
+
+.kg-section-subtitle {
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.kg-step-card {
+    border-radius: 1.25rem;
+    padding: 1.5rem 1.4rem 1.4rem;
+    background: #ffffff;
+    box-shadow: 0 14px 34px rgba(48, 57, 130, 0.08);
+}
+
+.kg-step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--kg-accent), var(--kg-primary));
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+}
+
+.kg-impact-card {
+    border-radius: 1.25rem;
+    padding: 1.5rem 1.4rem 1.4rem;
+    background: linear-gradient(135deg, #ffffff, #fff7df);
+    box-shadow: 0 14px 34px rgba(199, 151, 71, 0.16);
+}
+
+.kg-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--kg-text-muted);
+    margin-right: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+/* Book of Kindness */
+
+.kg-quote-shell {
+    border-radius: var(--kg-radius-xl);
+    padding: 1.75rem 1.75rem 1.6rem;
+    background: linear-gradient(135deg, #ffe9f3, #fff7df);
+    box-shadow: var(--kg-shadow-soft);
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.kg-quote-label {
+    letter-spacing: 0.12em;
+    color: var(--kg-text-muted);
+}
+
+.kg-quote-text {
+    font-family: "Playfair Display", "Times New Roman", serif;
+    font-size: 1.35rem;
+    line-height: 1.5;
+}
+
+.kg-quote-subtext {
+    color: var(--kg-text-muted);
+}
+
+/* Fade animation when quote changes */
+
+.kg-quote-fade-in {
+    animation: kg-fade 0.7s ease-out;
+}
+
+@keyframes kg-fade {
+    0% {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive tweaks */
+
+@media (max-width: 991.98px) {
+    .kg-orbit {
+        margin-top: 1.25rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .kg-orbit {
+        height: 260px;
+    }
+}
+.kg-page {
+    padding: 3rem 0 4rem;
+}
+
+.kg-page-header {
+    max-width: 720px;
+    margin: 0 auto 2.5rem;
+}
+
+.kg-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0f0f0e;
+}
+
+.kg-page-title {
+    font-family: "Playfair Display", serif;
+    font-size: 2.3rem;
+    line-height: 1.2;
+    margin-bottom: 0.6rem;
+}
+
+.kg-page-subtitle {
+    font-size: 1rem;
+    color: #5b6478;
+}
+
+.kg-two-column {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 1.75rem;
+}
+
+@media (max-width: 992px) {
+    .kg-two-column {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.kg-main-card,
+.kg-side-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 1.75rem 1.9rem;
+    box-shadow: 0 18px 45px rgba(12, 37, 74, 0.08);
+}
+
+.kg-side-card {
+    background: linear-gradient(135deg, #fffdf5, #fff8f9);
+}
+
+.kg-section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.kg-section-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 0.25rem;
+    color: #6a7387;
+}
+
+.kg-body,
+.kg-body-small {
+    font-size: 0.98rem;
+    color: #334155;
+}
+
+.kg-body-small {
+    font-size: 0.86rem;
+}
+
+.kg-split {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+}
+
+.kg-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.kg-pill {
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: #eef3ff;
+    color: #1f3c88;
+}
+
+.kg-pill-soft {
+    background: #f3f4ff;
+    color: #4b5a94;
+}
+
+.kg-list {
+    padding-left: 1.1rem;
+    font-size: 0.98rem;
+    color: #334155;
+}
+
+.kg-note {
+    font-size: 0.86rem;
+    color: #6b7280;
+    margin-top: 0.8rem;
+}
+
+.kg-divider {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 1.5rem 0 1.2rem;
+}
+
+.kg-side-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.kg-amount-box {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.kg-amount-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: #6b7280;
+}
+
+.kg-amount-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.kg-amount-chip {
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    background: #eef3ff;
+}
+
+.kg-progress {
+    margin-bottom: 1rem;
+}
+
+.kg-progress-bar {
+    height: 6px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    overflow: hidden;
+}
+
+.kg-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.kg-progress-text {
+    font-size: 0.85rem;
+    color: #4b5563;
+    margin-top: 0.35rem;
+}
+
+.kg-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: none;
+    padding: 0.7rem 1.6rem;
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.96rem;
+    cursor: pointer;
+}
+
+.kg-btn-primary:hover {
+    filter: brightness(1.05);
+}
+
+.kg-faq-item {
+    border-radius: 14px;
+    padding: 0.8rem 1rem;
+    background: #f9fafb;
+    margin-bottom: 0.65rem;
+    cursor: pointer;
+}
+
+.kg-faq-item summary {
+    list-style: none;
+    font-weight: 600;
+}
+
+.kg-faq-item summary::-webkit-details-marker {
+    display: none;
+}
+
+.kg-faq-item p {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    color: #4b5563;
+}
+
+footer
+html, body { height: 100%; }
+
+body{
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main{
+  flex: 1;
+}
+
+/* kill the absolute footer behavior */
+.footer{
+  position: static !important;
+  bottom: auto !important;
+  line-height: normal !important;
+  white-space: normal !important;
+  padding: 18px 0;
+}
+
+/* Luxury background + subtle 3D accents */
+.needs-page{
+  background:
+    linear-gradient(
+      180deg,
+      #fff7df 0%,
+      #fff3cf 35%,
+      #fdf6e6 100%
+    );
+}
+
+.need-card{
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(6px);
+  border-radius: 22px;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+}
+
+
+/* Image section */
+.need-media{
+  width: 100%;
+  height: 160px;
+  border-radius: 18px;
+  overflow: hidden;
+  position: relative;
+  background: #0b1220;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.need-media img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.03);
+  filter: saturate(1.05) contrast(1.03);
+}
+
+.need-media-glow{
+  position:absolute;
+  inset:-40%;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 215, 140, 0.25), transparent 55%),
+    radial-gradient(circle at 70% 10%, rgba(99, 102, 241, 0.20), transparent 58%);
+  pointer-events:none;
+}
+
+.need-media-placeholder{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: linear-gradient(135deg, rgba(15,23,42,0.92), rgba(30,41,59,0.92));
+}
+.need-media-placeholder .ph{
+  color: rgba(255,255,255,0.82);
+  font-weight: 800;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  font-size: .75rem;
+}
+/* =========================================
+   UpliftBridge — LUXURY (NO GREEN)
+   Paste at bottom of wwwroot/css/site.css
+   ========================================= */
+
+:root{
+  --kg-ink: #0b1020;            /* deep navy text */
+  --kg-muted: #64748b;          /* slate */
+  --kg-surface: rgba(255,255,255,0.92);
+
+  --kg-royal: #2f5bff;          /* royal blue */
+  --kg-royal-2: #7aa6ff;        /* soft blue */
+  --kg-rose: #ff4d8d;           /* luxe rose */
+  --kg-champagne: #f6d07b;      /* gold */
+  --kg-champagne-2: #ffdca3;    /* lighter gold */
+  --kg-lilac: #b79bff;          /* premium lilac */
+
+  --kg-shadow: 0 22px 60px rgba(11,16,32,0.14);
+  --kg-ring: 0 0 0 1px rgba(255,255,255,0.8);
+}
+
+/* Luxury page background */
+body{
+  color: var(--kg-ink);
+  background:
+    radial-gradient(circle at 12% 10%, rgba(246,208,123,0.22), transparent 45%),
+    radial-gradient(circle at 88% 14%, rgba(183,155,255,0.18), transparent 48%),
+    radial-gradient(circle at 40% 92%, rgba(255,77,141,0.10), transparent 55%),
+    linear-gradient(180deg, #fbfcff 0%, #f6f7ff 55%, #ffffff 100%);
+}
+
+/* Make your cards feel premium */
+.kg-card,
+.need-card,
+.gate-card,
+.kg-dream-card{
+  box-shadow: var(--kg-shadow), var(--kg-ring);
+}
+
+/* -----------------------------------------
+   NO GREEN: override progress bars everywhere
+   (Bootstrap .bg-success + your custom progress div)
+   ----------------------------------------- */
+.progress > div,
+.progress-bar,
+.bg-success{
+  background: linear-gradient(90deg,
+    rgba(246,208,123,1),
+    rgba(255,77,141,0.92),
+    rgba(47,91,255,0.92)
+  ) !important;
+}
+
+/* If you want a calmer “gold-only” progress, use this instead:
+.progress > div, .progress-bar, .bg-success{
+  background: linear-gradient(90deg, var(--kg-champagne), var(--kg-champagne-2)) !important;
+}
+*/
+
+/* -----------------------------------------
+   Verification / Trust badges (NO GREEN)
+   Keep your existing class names, just recolor them.
+   ----------------------------------------- */
+.trust-green,
+.pill-green{
+  background: rgba(246,208,123,0.25) !important;
+  color: #6b4a00 !important;
+  border-color: rgba(246,208,123,0.55) !important;
+}
+
+.trust-yellow,
+.pill-yellow{
+  background: rgba(183,155,255,0.18) !important;
+  color: #3b2a6e !important;
+  border-color: rgba(183,155,255,0.35) !important;
+}
+
+.trust-gray,
+.pill-gray{
+  background: rgba(15,23,42,0.05) !important;
+  color: #0f172a !important;
+  border-color: rgba(15,23,42,0.08) !important;
+}
+
+/* Your “verified” chip on Needs cards */
+.chip-verified{
+  background: rgba(246,208,123,0.22) !important;
+  color: #6b4a00 !important;
+  border: 1px solid rgba(246,208,123,0.45) !important;
+}
+
+/* softer version */
+.chip-verified-soft{
+  background: rgba(183,155,255,0.16) !important;
+  color: #3b2a6e !important;
+  border: 1px solid rgba(183,155,255,0.35) !important;
+}
+
+/* -----------------------------------------
+   3D premium “orbs” behind cards (subtle)
+   Add class="kg-luxe-orbs" to any card/container
+   ----------------------------------------- */
+.kg-luxe-orbs{
+  position: relative;
+  overflow: hidden;
+}
+.kg-luxe-orbs::before{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(246,208,123,0.35), transparent 55%),
+    radial-gradient(circle at 80% 18%, rgba(47,91,255,0.22), transparent 58%),
+    radial-gradient(circle at 45% 85%, rgba(255,77,141,0.14), transparent 60%);
+  filter: blur(2px);
+  opacity: 0.9;
+  pointer-events:none;
+  z-index: 0;
+}
+.kg-luxe-orbs > *{ position: relative; z-index: 1; }
+/* =========================================================
+   UpliftBridge — CHANEL LUXURY THEME (NO GREEN)
+   Paste at bottom of wwwroot/css/site.css
+   ========================================================= */
+
+:root{
+  --ch-ink:#0b0b0f;                 /* Chanel black */
+  --ch-ivory:#fbfaf7;               /* ivory */
+  --ch-ivory-2:#f4f1ea;             /* warm ivory */
+  --ch-gold:#c8a96a;                /* champagne gold */
+  --ch-gold-2:#e2cf9b;              /* lighter gold */
+  --ch-line:rgba(11,11,15,.08);
+  --ch-shadow: 0 22px 60px rgba(11,11,15,.14);
+}
+
+/* Whole page background = ivory + subtle tweed */
+body{
+  color: var(--ch-ink);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(200,169,106,.14), transparent 48%),
+    radial-gradient(circle at 85% 18%, rgba(11,11,15,.08), transparent 55%),
+    /* tweed-like micro texture */
+    repeating-linear-gradient(135deg,
+      rgba(11,11,15,.025) 0px, rgba(11,11,15,.025) 1px,
+      transparent 1px, transparent 9px),
+    repeating-linear-gradient(45deg,
+      rgba(200,169,106,.020) 0px, rgba(200,169,106,.020) 1px,
+      transparent 1px, transparent 10px),
+    linear-gradient(180deg, var(--ch-ivory) 0%, var(--ch-ivory-2) 55%, #ffffff 100%);
+}
+
+/* Cards = glossy ivory + luxury shadow */
+.kg-card,
+.need-card,
+.gate-card{
+  background: rgba(255,255,255,.92);
+  border: 1px solid var(--ch-line);
+  box-shadow: var(--ch-shadow);
+}
+
+/* Headings feel more “couture” */
+.need-title,
+.title,
+.admin-head h1,
+.needs-header h1{
+  color: var(--ch-ink);
+  letter-spacing: -0.01em;
+}
+
+/* Buttons: black primary, gold accent */
+.btn-primary{
+  background: var(--ch-ink) !important;
+  border-color: var(--ch-ink) !important;
+  color: #fff !important;
+}
+.btn-primary:hover{
+  filter: brightness(1.05);
+}
+.btn-warning{
+  background: linear-gradient(90deg, var(--ch-gold), var(--ch-gold-2)) !important;
+  border-color: rgba(200,169,106,.65) !important;
+  color: #2a1f12 !important;
+  font-weight: 900;
+}
+
+/* NO GREEN: progress bars everywhere -> gold gradient */
+.progress > div,
+.progress-bar,
+.bg-success{
+  background: linear-gradient(90deg, var(--ch-gold), var(--ch-gold-2)) !important;
+}
+
+/* Trust / verification badges: gold/black/ivory (no green) */
+.trust-green, .pill-green{
+  background: rgba(200,169,106,.18) !important;
+  color: #5b421a !important;
+  border-color: rgba(200,169,106,.40) !important;
+}
+.trust-yellow, .pill-yellow{
+  background: rgba(11,11,15,.06) !important;
+  color: var(--ch-ink) !important;
+  border-color: rgba(11,11,15,.12) !important;
+}
+.trust-gray, .pill-gray{
+  background: rgba(255,255,255,.65) !important;
+  color: var(--ch-ink) !important;
+  border-color: rgba(11,11,15,.10) !important;
+}
+
+/* Verified chips on cards */
+.chip-verified{
+  background: rgba(200,169,106,.16) !important;
+  color: #5b421a !important;
+  border: 1px solid rgba(200,169,106,.38) !important;
+}
+.chip-verified-soft{
+  background: rgba(11,11,15,.06) !important;
+  color: var(--ch-ink) !important;
+  border: 1px solid rgba(11,11,15,.12) !important;
+}
+
+/* “Pearl” glow accent for premium feel */
+.kg-luxe-orbs{
+  position: relative;
+  overflow: hidden;
+}
+.kg-luxe-orbs::before{
+  content:"";
+  position:absolute;
+  inset:-45%;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(255,255,255,.55), transparent 55%),
+    radial-gradient(circle at 82% 18%, rgba(200,169,106,.22), transparent 58%),
+    radial-gradient(circle at 45% 92%, rgba(11,11,15,.10), transparent 62%);
+  filter: blur(2px);
+  pointer-events:none;
+  z-index:0;
+}
+.kg-luxe-orbs > *{ position: relative; z-index: 1; }
+/* ================================
+   LUXURY NEED CARD MEDIA (CHANEL)
+   ================================ */
+
+.need-card {
+    overflow: hidden;
+    background: #f4b117fa;
+}
+
+/* Image container */
+.need-media {
+    position: relative;
+    height: 180px;
+    margin: -1.4rem -1.6rem 1rem;
+    overflow: hidden;
+    border-radius: 1.25rem 1.25rem 0 0;
+}
+
+/* Image itself */
+.need-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.03);
+    transition: transform 0.8s ease;
+}
+
+/* Soft black overlay (Chanel editorial look) */
+.need-media::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.00),
+        rgba(0,0,0,0.25)
+    );
+}
+
+/* Gentle hover – NOT flashy */
+.need-card:hover .need-media img {
+    transform: scale(1.08);
+}
+
+/* Remove emerald / success green */
+.progress-bar {
+    background: linear-gradient(
+        90deg,
+        #a5adbd,
+        #dfd65a
+    ) !important;
+}
+/* --- Quiet Gift (Luxury Reciprocity) --- */
+.quiet-gift-wrap{
+    margin: 24px 0;
+}
+
+.quiet-gift-trigger{
+    background: none;
+    border: none;
+    padding: 0;
+    font-weight: 600;
+    font-size: .95rem;
+    color: #111;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.quiet-gift-card{
+    margin-top: 12px;
+    max-width: 420px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ffffff, #f7f7f7);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+}
+
+.quiet-gift-text{
+    margin: 0;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: #0f172a;
+    line-height: 1.5;
+}
+/* --- Need card image (premium / Chanel-ish) --- */
+.need-media{
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  height: 160px;
+  box-shadow: 0 18px 40px rgba(15,23,42,0.10);
+}
+
+.need-media img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.02);
+  filter: saturate(0.95) contrast(1.02);
+}
+
+.need-media-overlay{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 236, 246, 0.45), transparent 55%),
+    radial-gradient(circle at 80% 10%, rgba(255, 244, 230, 0.40), transparent 55%),
+    linear-gradient(to bottom, rgba(0,0,0,0.00), rgba(0,0,0,0.30));
+  pointer-events:none;
+}
+/* =========================================================
+   UpliftBridge — DARK LUXURY THEME (SITE-WIDE) — NO GREEN
+   Paste at VERY BOTTOM of wwwroot/css/site.css
+   ========================================================= */
+
+:root{
+  --kg-bg: #07070a;                  /* page base */
+  --kg-bg-2: #0b0b10;                /* deep surface */
+  --kg-surface: rgba(18,18,24,.66);  /* glass cards */
+  --kg-line: rgba(255,255,255,.10);
+  --kg-text: rgba(255,255,255,.92);
+  --kg-muted: rgba(255,255,255,.68);
+
+  --kg-gold: #c8a96a;                /* champagne gold */
+  --kg-gold-2: #e2cf9b;
+  --kg-ink: #0b0b0f;
+
+  --kg-shadow: 0 22px 60px rgba(0,0,0,.55);
+}
+
+/* Whole site background */
+html, body{
+  background:
+    radial-gradient(circle at 18% 12%, rgba(200,169,106,.16), transparent 48%),
+    radial-gradient(circle at 82% 18%, rgba(255,255,255,.06), transparent 52%),
+    radial-gradient(circle at 45% 92%, rgba(200,169,106,.08), transparent 60%),
+    linear-gradient(180deg, var(--kg-bg) 0%, var(--kg-bg-2) 100%);
+  color: var(--kg-text);
+}
+
+body{
+  font-family: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Headings */
+h1, h2, h3, .kg-hero-title, .kg-section-title{
+  font-family: "Playfair Display", "Times New Roman", serif;
+  color: var(--kg-text);
+}
+
+/* Links */
+a{ color: rgba(255,255,255,.90); }
+a:hover{ color: var(--kg-gold-2); }
+
+/* Bootstrap containers/cards look premium */
+.card,
+.kg-card,
+.need-card,
+.kg-step-card,
+.kg-impact-card,
+.kg-main-card,
+.kg-side-card{
+  background: var(--kg-surface) !important;
+  border: 1px solid var(--kg-line) !important;
+  box-shadow: var(--kg-shadow);
+  backdrop-filter: blur(10px);
+  color: var(--kg-text);
+}
+
+/* Muted text helpers */
+.text-muted,
+.kg-page-subtitle,
+.kg-hero-subtitle,
+.kg-note,
+.form-text,
+.kg-body-small{
+  color: var(--kg-muted) !important;
+}
+
+/* Inputs */
+.form-control,
+.form-select,
+textarea{
+  background: rgba(0,0,0,.25) !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  color: var(--kg-text) !important;
+}
+
+.form-control::placeholder,
+textarea::placeholder{
+  color: rgba(255,255,255,.45) !important;
+}
+
+.form-control:focus,
+.form-select:focus{
+  box-shadow: 0 0 0 4px rgba(200,169,106,.18) !important;
+  border-color: rgba(200,169,106,.55) !important;
+}
+
+/* Buttons */
+.btn-primary{
+  background: linear-gradient(90deg, var(--kg-gold), var(--kg-gold-2)) !important;
+  border-color: rgba(200,169,106,.65) !important;
+  color: var(--kg-ink) !important;
+  font-weight: 900;
+}
+
+.btn-primary:hover{
+  filter: brightness(1.05);
+}
+
+.btn-outline-primary{
+  border-color: rgba(200,169,106,.55) !important;
+  color: rgba(255,255,255,.92) !important;
+  background: rgba(0,0,0,.25) !important;
+}
+
+.btn-outline-primary:hover{
+  background: rgba(0,0,0,.40) !important;
+  border-color: rgba(200,169,106,.80) !important;
+  color: rgba(255,255,255,.96) !important;
+}
+
+/* Pills / chips */
+.kg-pill,
+.filter-pill,
+.chip-category,
+.chip-verified,
+.chip-verified-soft{
+  background: rgba(0,0,0,.30) !important;
+  border: 1px solid rgba(200,169,106,.22) !important;
+  color: rgba(255,255,255,.88) !important;
+}
+
+.filter-pill.is-active{
+  background: rgba(200,169,106,.14) !important;
+  border-color: rgba(200,169,106,.55) !important;
+}
+
+/* NO GREEN anywhere (progress bars + bootstrap success) */
+.progress,
+.kg-progress-bar{
+  background: rgba(255,255,255,.12) !important;
+}
+
+.progress > div,
+.progress-bar,
+.kg-progress-fill,
+.bg-success{
+  background: linear-gradient(90deg, var(--kg-gold), var(--kg-gold-2)) !important;
+}
+
+/* Alerts */
+.alert{
+  background: rgba(0,0,0,.30) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.90) !important;
+}
+
+/* Need images (premium editorial) */
+.need-media{
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  height: 170px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.35);
+}
+
+.need-media img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.02);
+  filter: saturate(0.95) contrast(1.03);
+  transition: transform 0.8s ease;
+}
+
+.need-card:hover .need-media img{
+  transform: scale(1.06);
+}
+
+.need-media::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(to bottom, rgba(228, 38, 38, 0.05), rgba(0,0,0,.45));
+}
+
+/* Footer */
+.kg-footer, footer{
+  background: rgba(0,0,0,.35) !important;
+  border-top: 1px solid rgba(255,255,255,.10) !important;
+  color: rgba(255,255,255,.70) !important;
+}
+/* =========================================
+   HOW UpliftBridge WORKS — READABILITY FIX
+   ========================================= */
+
+/* 1) Make the step cards higher-contrast */
+.kg-step-card,
+.how-step,
+.how-card,
+.step-card {
+  background: rgba(10,10,12,0.70) !important;     /* deep luxury dark */
+  border: 1px solid rgba(255,220,160,0.18) !important;
+  box-shadow: 0 22px 60px rgba(0,0,0,0.45) !important;
+}
+
+/* 2) Force readable text inside those cards */
+.kg-step-card h1,
+.kg-step-card h2,
+.kg-step-card h3,
+.kg-step-card h4,
+.kg-step-card .title,
+.kg-step-card .heading,
+.kg-step-card strong,
+.how-step h1, .how-step h2, .how-step h3,
+.how-card h1, .how-card h2, .how-card h3,
+.step-card h1, .step-card h2, .step-card h3 {
+  color: rgba(255,255,255,0.92) !important;
+}
+
+.kg-step-card p,
+.kg-step-card .text,
+.kg-step-card .subtitle,
+.kg-step-card .muted,
+.how-step p,
+.how-card p,
+.step-card p {
+  color: rgba(255,255,255,0.72) !important;
+}
+
+/* 3) The number circle should pop */
+.kg-step-number,
+.how-step .num,
+.step-number {
+  background: linear-gradient(90deg, rgba(255,220,160,0.95), rgba(200,170,120,0.90)) !important;
+  color: rgba(10,10,12,0.95) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  font-weight: 900 !important;
+}
+
+/* 4) Optional: add subtle glow inside cards so text never “dies” */
+.kg-step-card,
+.how-step,
+.how-card,
+.step-card {
+  position: relative;
+  overflow: hidden;
+}
+.kg-step-card::before,
+.how-step::before,
+.how-card::before,
+.step-card::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,220,160,0.12), transparent 55%),
+    radial-gradient(circle at 80% 10%, rgba(255,255,255,0.06), transparent 58%);
+  pointer-events: none;
+}
+.kg-step-card > *,
+.how-step > *,
+.how-card > *,
+.step-card > * {
+  position: relative;
+  z-index: 1;
+}
+/* ===========================
+   STORIES PAGE: premium header + readable luxury look
+   Applies ONLY to /Home/Stories when BodyClass="stories-body"
+   =========================== */
+
+body.stories-body {
+  background: #131211;
+}
+
+/* Header / Navbar */
+body.stories-body .navbar {
+  background: linear-gradient(180deg, rgba(160, 114, 39, 0.98), rgba(10, 9, 7, 0.92)) !important;
+  border-bottom: 1px solid rgba(157, 108, 15, 0.18);
+  box-shadow: 0 14px 35px rgba(0,0,0,0.55);
+}
+
+body.stories-body .navbar-brand {
+  color: rgba(146, 102, 21, 0.96) !important;
+  letter-spacing: 0.06em;
+}
+
+body.stories-body .nav-link {
+  color: rgba(255, 241, 220, 0.86) !important;
+  font-weight: 650;
+}
+
+body.stories-body .nav-link:hover {
+  color: rgba(255, 220, 160, 0.98) !important;
+  opacity: 1;
+}
+
+/* Give a Gift button – premium gold */
+body.stories-body .btn-give,
+body.stories-body .navbar .btn-give {
+  background: linear-gradient(180deg, rgba(240, 190, 83, 0.96), rgba(193, 150, 70, 0.96)) !important;
+  border: 1px solid rgba(255, 220, 160, 0.25) !important;
+  color: rgba(14, 10, 6, 0.95) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+}
+
+body.stories-body .btn-give:hover,
+body.stories-body .navbar .btn-give:hover {
+  filter: brightness(1.06);
+}
+
+/* Page hero / background blending (keeps text readable) */
+body.stories-body main.container,
+body.stories-body main.container.mt-4 {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* If your Stories page has a wrapper like .stories-page, this makes it richer */
+body.stories-body .stories-page {
+  position: relative;
+  background: transparent;
+}
+
+body.stories-body .stories-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(201, 163, 90, 0.14), transparent 44%),
+    radial-gradient(circle at 80% 22%, rgba(255, 220, 160, 0.10), transparent 48%),
+    linear-gradient(180deg, rgba(0,0,0,0.82), rgba(0,0,0,0.62));
+}
+
+/* Make headings pop but stay classy */
+body.stories-body h1,
+body.stories-body h2,
+body.stories-body h3 {
+  color: rgba(200, 196, 74, 0.95);
+  text-shadow: 0 2px 14px rgba(0,0,0,0.45);
+}
+
+/* Make paragraph text readable */
+body.stories-body p,
+body.stories-body .lead,
+body.stories-body .text-muted {
+  color: rgba(255, 245, 230, 0.72) !important;
+}
+
+/* Your white story cards: keep them premium + readable */
+body.stories-body .story-card,
+body.stories-body .card {
+  border-radius: 22px;
+  border: 1px solid rgba(90, 125, 201, 0.16);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+}
+
+/* Card labels/badges – subtle luxury */
+body.stories-body .badge,
+body.stories-body .pill,
+body.stories-body .tag {
+  border: 1px solid rgba(201, 163, 90, 0.22);
+}
+/* ===== FIX: Stories overlay should NOT dim the content ===== */
+
+/* Make sure stories wrapper establishes layering */
+body.stories-body .stories-page{
+  position: relative;
+  isolation: isolate; /* important: keeps ::before behind content */
+}
+
+/* Put overlay behind content and soften it */
+body.stories-body .stories-page::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index: 0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(201,163,90,0.10), transparent 44%),
+    radial-gradient(circle at 80% 22%, rgba(255,220,160,0.08), transparent 48%),
+    linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.35));
+}
+
+/* Force everything inside to be above overlay */
+body.stories-body .stories-page > *{
+  position: relative;
+  z-index: 1;
+}
+
+/* Make hero text readable again */
+body.stories-body .stories-page h1{
+  color: rgba(255,245,230,0.96) !important;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.55);
+}
+
+body.stories-body .stories-page p,
+body.stories-body .stories-page .lead{
+  color: rgba(255,245,230,0.78) !important;
+}
+
+/* Keep story cards crisp (not washed out) */
+body.stories-body .stories-page .card{
+  background: rgba(255,255,255,0.98) !important;
+  color: #17130f !important;
+}
+
+body.stories-body .stories-page .card p,
+body.stories-body .stories-page .card .text-muted{
+  color: rgba(20,16,12,0.75) !important;
+}
+/* ================================
+   STORIES — FORCE READABILITY
+   ================================ */
+
+/* Ensure overlay never affects cards */
+.stories-page {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Cards must be true white paper */
+.stories-page .story-card {
+  background: #ffffff !important;
+  color: #1f2933 !important;
+}
+
+/* Headings inside cards */
+.stories-page .story-title {
+  color: #111827 !important;
+}
+
+/* Main paragraph text */
+.stories-page .story-body {
+  color: #374151 !important;
+}
+
+/* Quotes need strong contrast */
+.stories-page .story-quote {
+  color: #1f2937 !important;
+  border-left-color: #d1d5db;
+}
+
+/* Meta text slightly softer */
+.stories-page .story-meta {
+  color: #6b7280 !important;
+}
+
+/* Prevent any overlay bleed */
+.stories-page .story-card * {
+  opacity: 1 !important;
+}
+/* ================================
+   STORIES PAGE BACKGROUND FIX
+   ================================ */
+
+.stories-body {
+  background: linear-gradient(
+    180deg,
+    #f7f4ef 0%,
+    #f3efe8 40%,
+    #ece7dd 100%
+  );
+}
+
+/* Optional subtle texture depth */
+.stories-body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.06), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(0, 0, 0, 0.04), transparent 45%);
+  pointer-events: none;
+  z-index: 0;
+}
+/* ================================
+   FIX: STORIES READABILITY
+   ================================ */
+
+/* Remove dark overlay influence */
+.stories-body::before {
+  display: none !important;
+}
+/* =========================================================
+   STORIES PAGE — BACKGROUND IMAGE + MERGED BOUNDARIES
+   ONLY applies when BodyClass="stories-body"
+   Paste at VERY BOTTOM of wwwroot/css/site.css
+   ========================================================= */
+
+body.stories-body{
+  /* Your photo as the page background */
+  background:
+    /* soft gold glow */
+    radial-gradient(circle at 18% 12%, rgba(200,169,106,.16), transparent 48%),
+    radial-gradient(circle at 82% 18%, rgba(255,255,255,.06), transparent 52%),
+    /* the image */
+    url("/images/needs/risingsun.jpg") center top / cover no-repeat fixed,
+    /* deep luxury base underneath */
+    linear-gradient(180deg, #0b0b10 0%, #07070a 100%) !important;
+
+  color: rgba(255,255,255,.92);
+}
+
+/* The “merge boundaries” layer (vignette + readable overlay) */
+body.stories-body .stories-page{
+  position: relative;
+  isolation: isolate;           /* keeps overlay behind content */
+  padding-top: 2.75rem;
+  padding-bottom: 3rem;
+}
+
+body.stories-body .stories-page::before{
+  content:"";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  /* This is what blends the cards into the image */
+  background:
+    /* top fade (merges header into photo) */
+    linear-gradient(180deg, rgba(0,0,0,.72) 0%, rgba(0,0,0,.40) 30%, rgba(0,0,0,.18) 60%, rgba(0,0,0,.55) 100%),
+    /* vignette edges */
+    radial-gradient(circle at 50% 45%, rgba(0,0,0,0.05), rgba(0,0,0,0.65) 78%),
+    /* subtle gold warmth */
+    radial-gradient(circle at 22% 18%, rgba(200,169,106,.14), transparent 52%);
+}
+
+body.stories-body .stories-page > *{
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero text stays readable on the photo */
+body.stories-body .stories-hero-title{
+  color: rgba(255,245,230,.96) !important;
+  text-shadow: 0 2px 16px rgba(0,0,0,.55);
+}
+
+body.stories-body .stories-hero-sub,
+body.stories-body .stories-page p{
+  color: rgba(255,245,230,.78) !important;
+}
+
+/* Cards: keep premium “paper” look and readable */
+body.stories-body .story-card{
+  background: rgba(255,255,255,.96) !important;
+  border: 1px solid rgba(255,220,160,.18) !important;
+  box-shadow: 0 24px 60px rgba(0,0,0,.55) !important;
+}
+
+body.stories-body .story-title{
+  color: #111827 !important;
+}
+
+body.stories-body .story-body{
+  color: #374151 !important;
+}
+
+body.stories-body .story-quote{
+  color: #1f2937 !important;
+  border-left-color: #d1d5db !important;
+}
+
+body.stories-body .story-meta,
+body.stories-body .story-tag{
+  color: #6b7280 !important;
+}
+/* =========================================================
+   STORIES PAGE — PHOTO ONLY + DARK TEXT (READABLE)
+   Paste at VERY BOTTOM of wwwroot/css/site.css
+   ========================================================= */
+
+/* 1) PHOTO BACKGROUND ONLY (no black screen) */
+body.stories-body{
+  background: url("/images/needs/risingsun.jpg") center top / cover no-repeat fixed !important;
+  color: #111827 !important;
+}
+
+/* 2) REMOVE any dark overlay layers on stories */
+body.stories-body::before,
+body.stories-body .stories-page::before,
+body.stories-body .stories-page::after{
+  display: none !important;
+  content: none !important;
+}
+
+/* 3) Ensure stories wrapper does NOT add dark backgrounds */
+body.stories-body .stories-page{
+  background: transparent !important;
+}
+
+/* 4) Make the hero area readable without black overlay:
+      give it a soft light “paper” panel */
+body.stories-body .stories-page > .container,
+body.stories-body .stories-page.container,
+body.stories-body .stories-page .container{
+  background: rgba(255,255,255,0.88) !important;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.18);
+}
+
+/* 5) FORCE all hero text to dark */
+body.stories-body .stories-hero-title,
+body.stories-body .stories-hero-sub,
+body.stories-body .stories-page p,
+body.stories-body .stories-page .text-muted{
+  color: #111827 !important;
+  text-shadow: none !important;
+}
+
+/* 6) Cards stay white, text stays DARK */
+body.stories-body .story-card{
+  background: rgba(255,255,255,0.96) !important;
+  color: #111827 !important;
+  border: 1px solid rgba(17,24,39,0.10) !important;
+  box-shadow: 0 18px 45px rgba(0,0,0,0.18) !important;
+}
+
+/* Force card text readable */
+body.stories-body .story-title{ color:#111827 !important; }
+body.stories-body .story-tag{ color:#4b5563 !important; }
+body.stories-body .story-body{ color:#374151 !important; }
+body.stories-body .story-quote{ color:#1f2937 !important; border-left-color:#d1d5db !important; }
+body.stories-body .story-meta{ color:#6b7280 !important; }
+
+/* 7) IMPORTANT: Undo any “opacity: 1/0.2” bugs from earlier themes */
+body.stories-body .stories-page *,
+body.stories-body .story-card *{
+  opacity: 1 !important;
+  filter: none !important;
+}
+/* =========================================================
+   STORIES — BLENDED HEADER + SOFTER GLASS PANEL
+   Paste at VERY BOTTOM of wwwroot/css/site.css
+   ========================================================= */
+
+/* 1) Blend navbar into the photo (no harsh gold block) */
+body.stories-body .navbar{
+  background: rgba(10, 10, 12, 0.18) !important;  /* glass */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 220, 160, 0.14) !important;
+  box-shadow: none !important;
+}
+
+/* Brand + links: premium but not loud */
+body.stories-body .navbar-brand{
+  color: rgba(255, 220, 160, 0.92) !important;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.35);
+}
+body.stories-body .nav-link{
+  color: rgba(255,255,255,0.90) !important;
+  font-weight: 650;
+}
+body.stories-body .nav-link:hover{
+  color: rgba(255,220,160,0.98) !important;
+}
+
+/* Give a Gift button: softer gold */
+body.stories-body .navbar .btn-give,
+body.stories-body .btn-give{
+  background: linear-gradient(180deg, rgba(246,208,123,0.92), rgba(200,169,106,0.92)) !important;
+  border: 1px solid rgba(255, 220, 160, 0.22) !important;
+  color: rgba(14,10,6,0.95) !important;
+  box-shadow: 0 12px 26px rgba(0,0,0,0.28) !important;
+}
+
+/* 2) Add a gentle fade under navbar so it "merges" with page */
+body.stories-body{
+  position: relative;
+}
+body.stories-body::after{
+  content:"";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 110px; /* adjust if your navbar is taller */
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0.42) 0%,
+    rgba(0,0,0,0.18) 55%,
+    rgba(0,0,0,0.00) 100%
+  );
+  z-index: 1; /* stays behind navbar (navbar is usually higher) */
+}
+
+/* 3) Soften the big white “words background” panel */
+body.stories-body .stories-page > .container,
+body.stories-body .stories-page.container,
+body.stories-body .stories-page .container{
+  background: rgba(255,255,255,0.72) !important; /* WAS too white */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.35) !important;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.16) !important;
+}
+
+/* Hero text: slightly darker for readability on lighter glass */
+body.stories-body .stories-hero-title,
+body.stories-body .stories-hero-sub,
+body.stories-body .stories-page p{
+  color: rgba(17, 24, 39, 0.92) !important;
+}
+
+/* Optional: make the top small eyebrow line a bit softer */
+body.stories-body .stories-page .small.text-uppercase{
+  color: rgba(17,24,39,0.68) !important;
+}
+/* =========================================================
+   STORIES PAGE (BodyClass="stories-body")
+   Photo background + clean readable layout
+   ========================================================= */
+
+body.stories-body{
+  /* use your photo */
+  background: url("/images/needs/risingsun.jpg") center / cover no-repeat fixed;
+  color: #111;
+}
+
+/* Remove any old overlay that was dimming the whole page */
+body.stories-body .stories-page::before,
+body.stories-body::before{
+  display: none !important;
+}
+
+/* Make header "merge" with the photo (no harsh bar) */
+body.stories-body .navbar{
+  background: linear-gradient(
+    180deg,
+    rgba(20, 18, 14, 0.65) 0%,
+    rgba(20, 18, 14, 0.20) 70%,
+    rgba(20, 18, 14, 0.00) 100%
+  ) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(8px);
+}
+
+body.stories-body .navbar .navbar-brand{
+  color: rgba(255,255,255,0.92) !important;
+  letter-spacing: 0.06em;
+}
+
+body.stories-body .navbar .nav-link{
+  color: rgba(255,255,255,0.86) !important;
+  font-weight: 650;
+}
+body.stories-body .navbar .nav-link:hover{
+  color: rgba(255,226,170,0.98) !important;
+}
+
+/* CTA button stays premium */
+body.stories-body .navbar .btn,
+body.stories-body .navbar .btn-give{
+  background: linear-gradient(180deg, #f1d08a, #caa45a) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  color: #1b140a !important;
+  font-weight: 800;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.25);
+}
+
+/* HERO text should be dark + readable.
+   Add a soft “glass” panel behind the intro content only. */
+body.stories-body .stories-page > .mb-4{
+  background: rgba(255,255,255,0.78);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 22px;
+  padding: 22px 22px 16px;
+  box-shadow: 0 22px 60px rgba(0,0,0,0.16);
+  backdrop-filter: blur(8px);
+}
+
+body.stories-body .stories-page .stories-hero-title{
+  color: #111827 !important;
+}
+body.stories-body .stories-page .stories-hero-sub,
+body.stories-body .stories-page p.small{
+  color: rgba(17,24,39,0.74) !important;
+}
+
+/* Cards = real white paper */
+body.stories-body .story-card{
+  background: rgba(255,255,255,0.92) !important;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 26px 70px rgba(0,0,0,0.18);
+  backdrop-filter: blur(10px);
+}
+
+body.stories-body .story-tag{ color: rgba(17,24,39,0.55) !important; }
+body.stories-body .story-title{ color: #111827 !important; }
+body.stories-body .story-body{ color: rgba(17,24,39,0.75) !important; }
+body.stories-body .story-quote{ color: rgba(17,24,39,0.80) !important; }
+body.stories-body .story-meta{ color: rgba(17,24,39,0.60) !important; }
+/* =========================================================
+   NEEDS CREATE — premium form page
+   ========================================================= */
+
+.needs-create-page,
+body .needs-create-page{
+  background:
+    radial-gradient(circle at 18% 12%, rgba(201,163,90,0.14), transparent 45%),
+    radial-gradient(circle at 82% 18%, rgba(99,102,241,0.10), transparent 48%),
+    linear-gradient(180deg, #0b0b0f 0%, #0f1117 100%);
+  min-height: 100vh;
+  padding-top: 28px;
+  padding-bottom: 60px;
+}
+
+/* The big pink/white top panel: make it “glass” and more premium */
+.needs-create-page .page-hero,
+.needs-create-page .hero,
+.needs-create-page .top-panel{
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 26px;
+  box-shadow: 0 26px 80px rgba(0,0,0,0.35);
+  backdrop-filter: blur(10px);
+}
+
+/* Headings readable + luxury */
+.needs-create-page h1,
+.needs-create-page .title{
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+.needs-create-page p{
+  color: rgba(17,24,39,0.72);
+}
+
+/* Form cards (left dark + right light) */
+.needs-create-page .left-card,
+.needs-create-page .about-card,
+.needs-create-page .kg-main-card{
+  background: rgba(17,17,22,0.78) !important;
+  color: rgba(255,255,255,0.92) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  border-radius: 22px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+}
+
+.needs-create-page .right-card,
+.needs-create-page .tips-card,
+.needs-create-page .kg-side-card{
+  background: rgba(255,255,255,0.86) !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+  border-radius: 22px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.22);
+  backdrop-filter: blur(10px);
+}
+
+/* Inputs */
+.needs-create-page input,
+.needs-create-page textarea,
+.needs-create-page select{
+  border-radius: 14px !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  background: rgba(0,0,0,0.22) !important;
+  color: rgba(255,255,255,0.92) !important;
+}
+.needs-create-page input::placeholder,
+.needs-create-page textarea::placeholder{
+  color: rgba(255,255,255,0.50) !important;
+}
+
+/* Inputs inside the light card should be dark text */
+.needs-create-page .right-card input,
+.needs-create-page .right-card textarea,
+.needs-create-page .right-card select,
+.needs-create-page .kg-side-card input,
+.needs-create-page .kg-side-card textarea,
+.needs-create-page .kg-side-card select{
+  background: rgba(255,255,255,0.95) !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  color: #111827 !important;
+}
+.needs-create-page .right-card input::placeholder,
+.needs-create-page .right-card textarea::placeholder{
+  color: rgba(17,24,39,0.45) !important;
+}
+
+/* Primary action button = gold premium */
+.needs-create-page .btn-primary{
+  background: linear-gradient(180deg, #f1d08a, #caa45a) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  color: #1b140a !important;
+  font-weight: 900;
+  border-radius: 999px !important;
+  padding: 0.75rem 1.4rem;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.35);
+}
+.needs-create-page .btn-primary:hover{ filter: brightness(1.06); }
+/* 🔥 REMOVE the overlay that dulls everything */
+.needs-page::before {
+  display: none !important;
+}

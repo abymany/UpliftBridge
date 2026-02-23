@@ -1,0 +1,459 @@
+@{
+    ViewData["Title"] = "Why UpliftBridge";
+}
+
+<!-- Debug: keep for now; delete later -->
+<div style="position:fixed;bottom:10px;right:10px;z-index:99999;background:#111;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;">
+  ABOUT VIEW LOADED ✅
+</div>
+
+@section Styles {
+<style>
+/* ===== PAGE ===== */
+
+.kg-about-page {
+  padding-top: 3rem;
+  padding-bottom: 4rem;
+}
+
+.kg-about-page,
+.kg-about-page p,
+.kg-about-page li {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+  font-weight: 560;                 /* thicker default */
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.kg-about-eyebrow {
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.kg-about-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.1rem, 3vw, 2.8rem);
+  color: #0f172a;
+  margin-bottom: 0.6rem;
+}
+
+.kg-about-subtitle {
+  font-size: 1.05rem;
+  color: #4b5563;
+  max-width: 720px;
+  line-height: 1.75;
+  font-weight: 560;
+}
+
+/* ===== VISUAL STRIP ===== */
+
+.kg-visual-strip {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.kg-visual-tile {
+  border-radius: 20px;
+  background: rgba(255,255,255,0.94);
+  border: 1px solid rgba(17,24,39,0.10);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.10);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 96px;
+}
+
+.kg-visual-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: #f5ecd6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(17,24,39,0.08);
+}
+
+.kg-visual-icon img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+
+.kg-visual-title {
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: #111827;
+  line-height: 1.15;
+  margin-bottom: 4px;
+}
+
+.kg-visual-sub {
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+/* ===== CARDS ===== */
+
+.kg-about-card {
+  background: #ffffff;
+  border-radius: 26px;
+  padding: 1.9rem 2.1rem;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.07);
+}
+
+.kg-about-card h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.kg-about-card p {
+  font-size: 1.03rem;
+  color: #111827;                 /* darker for visibility */
+  line-height: 1.75;
+  font-weight: 600;               /* thicker */
+}
+
+.kg-about-list {
+  font-size: 1.02rem;
+  color: #111827;
+  line-height: 1.75;
+  font-weight: 650;
+}
+.kg-about-list li + li { margin-top: 0.5rem; }
+
+.kg-about-section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.55rem;
+  color: #0f172a;
+  margin-bottom: 0.85rem;
+}
+
+.kg-about-quote {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.15rem;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+.kg-about-footer {
+  margin-top: 2.3rem;
+  font-size: 1.0rem;
+  color: #4b5563;
+  line-height: 1.6;
+  font-weight: 600;
+}
+.kg-about-footer-strong { font-weight: 800; color: #111827; }
+
+/* ===== SECTION HEADER ===== */
+
+.kg-section-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 0.9rem;
+}
+
+.kg-section-icon {
+  width: 66px;
+  height: 66px;
+  border-radius: 18px;
+  background: #f5ecd6;
+  padding: 10px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border: 1px solid rgba(17,24,39,0.08);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+}
+
+.kg-section-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  font-weight: 900;
+  margin-bottom: 0.3rem;
+}
+
+.kg-section-tagline {
+  margin-top: 0.25rem;
+  font-size: 0.98rem;
+  color: #475569;
+  font-weight: 700;
+}
+
+/* ===== BG PHOTO CONTROLS =====
+   Make photos lighter + text clearer.
+*/
+:root{
+  --kg-overlay-top: 0.88;      /* CHANGED: stronger white overlay (lighter photo) */
+  --kg-overlay-bottom: 0.82;   /* CHANGED: stronger white overlay (lighter photo) */
+}
+
+.kg-about-card.bg-photo{
+  position: relative;
+  overflow: hidden;
+  background-repeat: no-repeat;
+  background-position: var(--kg-bg-pos, center);
+  background-size: var(--kg-bg-size, cover);
+}
+
+/* overlay fade layer */
+.kg-about-card.bg-photo::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(
+    rgba(255,255,255,var(--kg-overlay-top)),
+    rgba(255,255,255,var(--kg-overlay-bottom))
+  );
+  z-index:0;
+}
+
+/* keep content above overlay */
+.kg-about-card.bg-photo > *{
+  position: relative;
+  z-index: 1;
+}
+
+/* extra readability when photo is stronger */
+.kg-about-card.bg-photo p,
+.kg-about-card.bg-photo li{
+  color:#0f172a;
+  font-weight: 700; /* CHANGED: thicker text for readability */
+  text-shadow: 0 1px 1px rgba(0,0,0,0.10); /* CHANGED: subtle contrast on busy images */
+}
+
+/* ===== PLATFORM SUSTAINABILITY READABILITY FIX (ONLY) =====
+   Scoped to the platform sustainability card only. Background image stays.
+*/
+.kg-about-card.platform-sustainability::before{
+  background: linear-gradient(
+    rgba(255,255,255,0.94),
+    rgba(255,255,255,0.90)
+  );
+}
+.kg-about-card.platform-sustainability p,
+.kg-about-card.platform-sustainability li{
+  background: rgba(255,255,255,0.88);
+  padding: 0.28rem 0.38rem;
+  border-radius: 8px;
+  text-shadow: none;
+}
+
+/* ===== RESPONSIVE ===== */
+@@media (max-width: 992px) {
+  .kg-visual-strip { grid-template-columns: repeat(2, 1fr); }
+  .kg-about-card { padding: 1.6rem 1.6rem; }
+  .kg-section-icon { width: 58px; height: 58px; }
+}
+@@media (max-width: 520px) {
+  .kg-visual-strip { grid-template-columns: 1fr; }
+  .kg-visual-tile { padding: 16px; }
+}
+</style>
+}
+
+<div class="kg-about-page container">
+
+  <!-- INTRO -->
+  <div>
+    <div class="kg-about-eyebrow mb-2">Why UpliftBridge exists</div>
+    <h1 class="kg-about-title">A quiet place to do something deeply meaningful.</h1>
+
+    <p class="kg-about-subtitle">
+      This project was born from one simple thought: if the world is a pie,
+      we don’t have to fight for bigger slices. We can spend our lives making
+      the pie itself bigger — so more people can study, play, build and heal.
+    </p>
+
+    <!-- VISUAL SUMMARY -->
+    <div class="kg-visual-strip" aria-label="UpliftBridge in four ideas">
+
+      <div class="kg-visual-tile">
+        <div class="kg-visual-icon">
+          <img src="@Url.Content("~/images/about/verified.jpg")" alt="Trust-first" />
+        </div>
+        <div>
+          <div class="kg-visual-title">Trust-first</div>
+          <div class="kg-visual-sub">Stories are reviewed &amp; verified</div>
+        </div>
+      </div>
+
+      <div class="kg-visual-tile">
+        <div class="kg-visual-icon">
+          <img src="@Url.Content("~/images/about/itembasedgiving.jpg")" alt="Specific needs" />
+        </div>
+        <div>
+          <div class="kg-visual-title">Specific needs</div>
+          <div class="kg-visual-sub">Books, shoes, fees — not vague asks</div>
+        </div>
+      </div>
+
+      <div class="kg-visual-tile">
+        <div class="kg-visual-icon">
+          <img src="@Url.Content("~/images/about/dignitnopressure.jpg")" alt="Dignity" />
+        </div>
+        <div>
+          <div class="kg-visual-title">Dignity</div>
+          <div class="kg-visual-sub">No guilt. No pressure. No shame</div>
+        </div>
+      </div>
+
+      <div class="kg-visual-tile">
+        <div class="kg-visual-icon">
+          <img src="@Url.Content("~/images/about/helpinghands.jpg")" alt="Impact updates" />
+        </div>
+        <div>
+          <div class="kg-visual-title">Impact updates</div>
+          <div class="kg-visual-sub">Progress &amp; gratitude later</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="row g-4 mt-4">
+
+    <!-- LEFT -->
+    <div class="col-lg-7">
+
+      <!-- FOR DONORS -->
+      <div class="kg-about-card bg-photo mb-4"
+           style="
+             background-image: url('@Url.Content("~/images/about/for-donors-bg.jpg")');
+             --kg-bg-size: 120%;
+             --kg-bg-pos: center;
+           ">
+        <div class="kg-section-header">
+          <img class="kg-section-icon"
+               src="@Url.Content("~/images/about/verified.jpg")"
+               alt="Promise icon" />
+          <div>
+            <div class="kg-section-kicker">For donors</div>
+            <h2>The UpliftBridge promise</h2>
+            <div class="kg-section-tagline">Give with confidence — not guesswork.</div>
+          </div>
+        </div>
+
+        <p class="mb-2">
+          UpliftBridge is for people who want to give quietly and wisely — people who ask
+          <em>“Is this real?”</em> and <em>“Will this actually help?”</em>
+        </p>
+        <p class="mb-0">
+          We focus on clarity, verification, and dignity. Every story is treated with respect.
+        </p>
+      </div>
+
+      <!-- LEGACY -->
+      <div class="kg-about-card bg-photo"
+           style="
+             background-image: url('@Url.Content("~/images/about/legacy-bg.jpg")'); /* put your legacy photo later */
+             --kg-bg-size: 125%;
+             --kg-bg-pos: center;
+           ">
+        <div class="kg-section-header">
+          <img class="kg-section-icon"
+               src="@Url.Content("~/images/about/helpinghands.jpg")"
+               alt="Legacy icon" />
+          <div>
+            <div class="kg-section-kicker">Long-term impact</div>
+            <h2 class="kg-about-section-title" style="margin:0;">A legacy beyond our lifetime</h2>
+            <div class="kg-section-tagline">Small help today. A life changed tomorrow.</div>
+          </div>
+        </div>
+
+        <p class="kg-about-quote">
+          “I became who I am because someone I did not know helped me.”
+        </p>
+        <p class="mb-0">
+          That is reason enough to build this carefully and honestly.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-lg-5">
+
+      <!-- HOW IT WORKS -->
+      <div class="kg-about-card bg-photo mb-4"
+           style="
+             background-image: url('@Url.Content("~/images/about/how-it-works-bg.jpg")'); /* add later */
+             --kg-bg-size: 130%;
+             --kg-bg-pos: center;
+           ">
+        <div class="kg-section-header">
+          <img class="kg-section-icon"
+               src="@Url.Content("~/images/about/timeline.jpg")"
+               alt="Flow icon" />
+          <div>
+            <div class="kg-section-kicker">How it works</div>
+            <h2>How a gift flows</h2>
+            <div class="kg-section-tagline">Simple steps. Real outcomes.</div>
+          </div>
+        </div>
+
+        <ul class="kg-about-list ps-3 mb-0">
+          <li>A real person shares a respectful story</li>
+          <li>We review and verify</li>
+          <li>A donor chooses to help</li>
+          <li>Funds are tied to real needs</li>
+        </ul>
+      </div>
+
+      <!-- SUSTAINABILITY -->
+      <div class="kg-about-card bg-photo platform-sustainability mb-4"
+           style="
+             background-image: url('@Url.Content("~/images/about/sustainability-bg.jpg?v=1")'); /* use JPG to avoid weird caching */
+             --kg-bg-size: contain;   /* CHANGED: fit fully inside the card */
+             --kg-bg-pos: center;
+           ">
+        <div class="kg-section-header">
+          <img class="kg-section-icon"
+               src="@Url.Content("~/images/about/verified.jpg")"
+               alt="Sustainability icon" />
+          <div>
+            <div class="kg-section-kicker">Platform sustainability</div>
+            <h2>How UpliftBridge keeps running</h2>
+            <div class="kg-section-tagline">Safety &amp; support take real work.</div>
+          </div>
+        </div>
+
+        <p class="mb-2">
+          UpliftBridge may take a small percentage from each completed gift to cover verification,
+          fraud prevention, hosting, and support.
+        </p>
+
+        <ul class="kg-about-list ps-3 mb-0">
+          <li><strong>Platform share:</strong> <em>1%</em></li>
+          <li>Always transparent</li>
+          <li>Kept as low as responsibly possible</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="kg-about-footer">
+    <span class="kg-about-footer-strong">UpliftBridge is an invitation.</span>
+    To give quietly. To receive with dignity. To believe kindness still works.
+  </div>
+
+</div>

@@ -1,0 +1,48 @@
+@model UpliftBridge.Models.Need
+@{
+    ViewData["Title"] = "Complete your donation";
+
+    var link = (Model.InstitutionPaymentLink ?? "").Trim();
+    var hasHttps = Uri.TryCreate(link, UriKind.Absolute, out var uri) && uri.Scheme == "https";
+    var allowed = Model.PreferDirectToInstitution && hasHttps;
+}
+
+<div class="kg-wrap kg-shell">
+  <div class="kg-glass">
+    <h1 class="kg-title">Complete your donation</h1>
+    <p class="kg-muted">
+      Your platform support is confirmed. If you want to complete the gift, use the official payment link below.
+    </p>
+
+    @if (allowed)
+    {
+      <div class="alert alert-secondary text-start">
+        <strong>Official payee:</strong> @Model.InstitutionName
+        @if (!string.IsNullOrWhiteSpace(Model.InstitutionType))
+        {
+            <span class="text-muted">(@Model.InstitutionType)</span>
+        }
+        <div class="small text-muted mt-1">
+          You are leaving UpliftBridge and going to an external official site.
+        </div>
+      </div>
+
+      <a class="kg-btn kg-btn-solid"
+         href="@link"
+         target="_blank"
+         rel="noopener noreferrer">
+        Open official payment link
+      </a>
+    }
+    else
+    {
+      <div class="alert alert-warning mt-3 text-start">
+        This need does not have a verified HTTPS official payment link enabled yet.
+      </div>
+    }
+
+    <div class="mt-3">
+      <a class="kg-btn" asp-action="Details" asp-route-id="@Model.Id">Back to need</a>
+    </div>
+  </div>
+</div>

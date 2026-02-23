@@ -1,0 +1,19 @@
+@{
+    ViewData["Title"] = "Admin";
+    var key = Context.Request.Query["key"].ToString();
+    ViewBag.AdminKey = key;
+}
+
+<div class="kg-wrap kg-shell">
+    <div class="kg-glass">
+        <div class="d-flex flex-wrap gap-3 align-items-start justify-content-between">
+            <div>
+                <div class="kg-kicker">ADMIN</div>
+                <h1 class="kg-title">Dashboard</h1>
+                <p class="kg-muted mb-0">Use the links to manage content and transparency.</p>
+            </div>
+
+            <partial name="_AdminLinks" />
+        </div>
+    </div>
+</div>

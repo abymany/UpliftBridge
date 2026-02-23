@@ -1,0 +1,36 @@
+@{
+    var key = (string?)ViewBag.AdminKey;
+    if (string.IsNullOrWhiteSpace(key))
+    {
+        key = Context.Request.Query["key"].ToString();
+    }
+}
+
+@if (!string.IsNullOrWhiteSpace(key))
+{
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="kg-btn kg-btn-ghost"
+           asp-controller="Admin" asp-action="Index"
+           asp-route-key="@key">Admin Home</a>
+
+        <a class="kg-btn kg-btn-ghost"
+           asp-controller="AdminNeeds" asp-action="Index"
+           asp-route-key="@key">Needs</a>
+
+        <a class="kg-btn kg-btn-ghost"
+           asp-controller="AdminPledges" asp-action="Index"
+           asp-route-key="@key">Pledges</a>
+
+        <a class="kg-btn kg-btn-ghost"
+           asp-controller="AdminUpdates" asp-action="Index"
+           asp-route-key="@key">Updates</a>
+
+        <a class="kg-btn kg-btn-gold"
+           asp-controller="AdminStories" asp-action="Index"
+           asp-route-key="@key">Stories</a>
+    </div>
+}
+else
+{
+    <div class="text-danger small">Admin key missing.</div>
+}

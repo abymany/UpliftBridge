@@ -1,0 +1,150 @@
+@{
+    ViewData["Title"] = "How verification works";
+}
+
+<section class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="text-center mb-4">
+                <span class="badge bg-light text-uppercase text-muted small mb-2">
+                    Trust &amp; Safety
+                </span>
+                <h1 class="h2 fw-semibold">
+                    How we verify needs on UpliftBridge
+                </h1>
+                <p class="text-muted mb-0">
+                    We keep this human: enough checks for donors to feel safe,
+                    without turning someone’s hardship into paperwork hell.
+                </p>
+            </div>
+
+            <h2 class="h5 fw-bold mb-3">Our approach</h2>
+            <p class="text-muted">
+                Every need is reviewed before it goes live. We look for clear details, realistic goals,
+                and respectful tone. When possible, we prefer gifts that can be routed to an institution
+                (school, clinic, store, nonprofit) instead of unrestricted cash.
+            </p>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h3 class="h6 fw-bold mb-3">Verification levels (what you’ll see on each need)</h3>
+
+                    <div class="mb-3">
+                        <div class="fw-semibold">1) Basic contact verified</div>
+                        <div class="small text-muted">
+                            We have a real way to contact the requester privately (email/phone) and the story passes basic review.
+                            This is the default level while we gather more confirmation.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="fw-semibold">2) Community verified</div>
+                        <div class="small text-muted">
+                            A trusted community contact confirms the situation (for example: teacher, coach, social worker,
+                            community leader, clinic staff). This adds real-world accountability.
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="fw-semibold">3) Organization verified (highest trust)</div>
+                        <div class="small text-muted">
+                            The need is tied to a verified organization or institution (school, nonprofit, clinic, store),
+                            and we have supporting confirmation that the request is legitimate.
+                        </div>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="small text-muted">
+                        <strong>Important:</strong> Verification is about reducing risk — it’s not a “judgment” on a person.
+                        We protect dignity while still protecting donors.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h3 class="h6 fw-bold mb-2">Direct-to-institution gifts (our preferred method)</h3>
+                    <p class="small text-muted mb-3">
+                        When possible, we ask posters to provide an <strong>official payment link</strong> (school invoice page,
+                        clinic bill portal, store checkout link, etc.). This allows donors to fund the real cost directly.
+                    </p>
+
+                    <ul class="small text-muted mb-0">
+                        <li class="mb-2">
+                            If a poster selects <strong>“Prefer donors to pay the institution directly”</strong>,
+                            an official payment link is required — because otherwise that promise is meaningless.
+                        </li>
+                        <li class="mb-2">
+                            If no official link exists, the need can still be posted — but it may remain at a lower trust level
+                            until stronger verification is available.
+                        </li>
+                        <li>
+                            We do not want random links. We want official, checkable destinations.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <h2 class="h5 fw-bold mb-3">For people posting a need</h2>
+            <ul class="small text-muted mb-4">
+                <li class="mb-2">
+                    Write clearly: what you need, why you need it, and what it changes.
+                </li>
+                <li class="mb-2">
+                    Show what you already tried (work, savings, school support, family help). Detail builds trust.
+                </li>
+                <li class="mb-2">
+                    If possible, include an institution name and an official payment route.
+                </li>
+                <li class="mb-2">
+                    Avoid full legal names, full addresses, or anything that risks your safety.
+                </li>
+                <li class="mb-0">
+                    When the need is met, post a short update to close the loop for donors.
+                </li>
+            </ul>
+
+            <h2 class="h5 fw-bold mb-3">For people giving a gift</h2>
+            <p class="small text-muted mb-4">
+                You’ll see a verification label on each need. Choose what you feel comfortable supporting.
+                If a need offers direct-to-institution payment, it typically provides the strongest clarity on where the gift goes.
+            </p>
+
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body">
+                    <h3 class="h6 fw-bold mb-2">What we don’t allow</h3>
+                    <ul class="small text-muted mb-0">
+                        <li class="mb-2">Guilt pressure, public shaming, or urgency tricks.</li>
+                        <li class="mb-2">Requests that feel dishonest, unsafe, or exploitative.</li>
+                        <li class="mb-2">Suspicious payment routing or “send money to me” behavior without verification.</li>
+                        <li class="mb-0">Harassment or doxxing. Dignity is non-negotiable.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body small text-muted">
+                    <p class="mb-2">
+                        <strong>A gentle reminder:</strong> no system is perfect.
+                        A small fraction of people may try to misuse kindness — but we won’t let them control the culture.
+                    </p>
+                    <p class="mb-0">
+                        Our promise: keep improving checks, keep transparency high, and treat every story with dignity.
+                    </p>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a asp-controller="Needs" asp-action="Index" class="btn btn-primary me-2">
+                    Browse current needs
+                </a>
+                <a asp-controller="Needs" asp-action="Create" class="btn btn-outline-secondary">
+                    Post a need
+                </a>
+            </div>
+
+        </div>
+    </div>
+</section>

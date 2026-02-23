@@ -1,0 +1,54 @@
+@model UpliftBridge.Models.NeedUpdateCreateViewModel
+
+@{
+    ViewData["Title"] = "Post an update";
+}
+
+<div class="container py-5" style="max-width: 860px;">
+    <h1 class="h3 fw-bold mb-2">Post an update</h1>
+    <p class="text-muted mb-4">
+        This shows publicly on the need page. Keep it respectful. No payment links or contact requests.
+    </p>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <div class="mb-2 text-muted small">Need</div>
+            <div class="fw-semibold mb-4">@ViewBag.NeedTitle</div>
+
+            <form asp-action="Update" asp-controller="Needs" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="NeedId" />
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label fw-semibold"></label>
+                    <input asp-for="Title" class="form-control" placeholder="Example: Thank you" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Message" class="form-label fw-semibold"></label>
+                    <textarea asp-for="Message" class="form-control" rows="6" placeholder="What changed? What did the gift help with?"></textarea>
+                    <span asp-validation-for="Message" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PublicName" class="form-label fw-semibold"></label>
+                    <input asp-for="PublicName" class="form-control" placeholder="Optional: A grateful student / A mother in Detroit" />
+                    <span asp-validation-for="PublicName" class="text-danger small"></span>
+                </div>
+
+                <button class="btn btn-primary">Post update</button>
+                <a asp-controller="Needs" asp-action="Details" asp-route-id="@Model.NeedId" class="btn btn-outline-secondary ms-2">
+                    Cancel
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

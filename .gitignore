@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# SQLite local database
+*.db
+*.db-shm
+*.db-wal
+
+# User uploads (if not meant for repo)
+uploads/

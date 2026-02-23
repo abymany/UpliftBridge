@@ -1,0 +1,303 @@
+@model IEnumerable<UpliftBridge.Models.Need>
+@using UpliftBridge.Models
+@using System.Text.RegularExpressions
+
+@functions{
+    string NeedImage(Need n)
+    {
+        var cat = ((n == null ? "" : n.Category.ToString()) ?? "").Trim().ToLowerInvariant();
+
+        return cat switch
+        {
+            "education" => Url.Content("~/images/needs/emptydesk.jpg"),
+            "sports"    => Url.Content("~/images/needs/emptygym.jpg"),
+            "family"    => Url.Content("~/images/needs/house.jpg"),
+            "medical"   => Url.Content("~/images/needs/emptyclinic.jpg"),
+            "health"    => Url.Content("~/images/needs/emptyclinic.jpg"),
+            "other"     => Url.Content("~/images/needs/kidsinclass.jpg"),
+            _           => Url.Content("~/images/needs/kidsinclass.jpg"),
+        };
+    }
+
+    string CleanOneLine(string s, int max = 120)
+    {
+        s = s ?? "";
+        if (string.IsNullOrWhiteSpace(s)) return "";
+        s = Regex.Replace(s, @"\s+", " ").Trim();
+        if (s.Length <= max) return s;
+        return s.Substring(0, max).TrimEnd() + "…";
+    }
+
+    // Extract first meaningful sentence from Description if ShortSummary is empty
+    string PreviewFromDescription(string desc)
+    {
+        desc = desc ?? "";
+        if (string.IsNullOrWhiteSpace(desc)) return "";
+
+        // Prefer the "Story" block content if your description was built in sections
+        // Your builder prints:
+        // Story
+        // -----
+        // <text>
+        var lines = desc.Split('\n').Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+
+        // If it contains "Story" header, take the first non-header line after it
+        var storyIdx = lines.FindIndex(x => x.Equals("Story", StringComparison.OrdinalIgnoreCase));
+        if (storyIdx >= 0)
+        {
+            for (int i = storyIdx + 1; i < lines.Count; i++)
+            {
+                var l = lines[i];
+                if (l.StartsWith("-", StringComparison.Ordinal)) continue;
+                if (l.Equals("Long-term dream", StringComparison.OrdinalIgnoreCase)) break;
+                if (l.Length > 6) return CleanOneLine(l, 130);
+            }
+        }
+
+        // Fallback: first non-header non-divider line
+        foreach (var l in lines)
+        {
+            if (l.Length < 4) continue;
+            if (Regex.IsMatch(l, @"^-{3,}$")) continue;
+            if (l.Equals("Timing", StringComparison.OrdinalIgnoreCase)) continue;
+            if (l.Equals("Requested items", StringComparison.OrdinalIgnoreCase)) continue;
+            if (l.Equals("Long-term dream", StringComparison.OrdinalIgnoreCase)) continue;
+            if (l.Equals("What has already been tried", StringComparison.OrdinalIgnoreCase)) continue;
+            return CleanOneLine(l, 130);
+        }
+
+        return "";
+    }
+
+    // Extract Item 1 line from the "Requested items" block, if present
+    string TopRequestedItem(string desc)
+    {
+        desc = desc ?? "";
+        if (string.IsNullOrWhiteSpace(desc)) return "";
+
+        var lines = desc.Split('\n').Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+        var itemsIdx = lines.FindIndex(x => x.Equals("Requested items", StringComparison.OrdinalIgnoreCase));
+
+        if (itemsIdx < 0) return "";
+
+        for (int i = itemsIdx + 1; i < lines.Count; i++)
+        {
+            var l = lines[i];
+            if (l.StartsWith("-", StringComparison.Ordinal)) continue;
+            // Expect "1. laptop — $900"
+            if (Regex.IsMatch(l, @"^\d+\.\s+"))
+                return CleanOneLine(l, 90);
+        }
+
+        return "";
+    }
+
+    string PrettyVerification(VerificationLevel v)
+    {
+        return v switch
+        {
+            VerificationLevel.OrganizationVerified => "Organization verified",
+            VerificationLevel.CommunityVerified => "Community verified",
+            _ => "Basic contact verified"
+        };
+    }
+}
+
+@{
+    ViewData["Title"] = "Needs";
+    ViewData["BodyClass"] = "needs-body";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/needs.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/bookOfKindness.js" asp-append-version="true"></script>
+
+    <script>
+        (function () {
+            const pills = Array.from(document.querySelectorAll('[data-filter]'));
+            const cards = Array.from(document.querySelectorAll('[data-need-card]'));
+            const empty = document.getElementById('needsEmptyState');
+
+            function setActive(btn) {
+                pills.forEach(p => p.classList.remove('is-active'));
+                btn.classList.add('is-active');
+            }
+
+            function matches(card, filter) {
+                if (filter === 'all') return true;
+
+                const cat = (card.getAttribute('data-category') || '').toLowerCase();
+                const ver = (card.getAttribute('data-verification') || '').toLowerCase();
+
+                if (filter === 'education' || filter === 'sports' || filter === 'family' || filter === 'medical' || filter === 'health' || filter === 'other') {
+                    return cat === filter;
+                }
+
+                if (filter === 'higher') {
+                    return ver === 'communityverified' || ver === 'organizationverified';
+                }
+
+                return true;
+            }
+
+            function applyFilter(filter, clickedBtn) {
+                if (clickedBtn) setActive(clickedBtn);
+
+                let shown = 0;
+                cards.forEach(c => {
+                    const ok = matches(c, filter);
+                    c.style.display = ok ? '' : 'none';
+                    if (ok) shown++;
+                });
+
+                if (empty) empty.style.display = shown === 0 ? '' : 'none';
+            }
+
+            pills.forEach(btn => btn.addEventListener('click', function () {
+                applyFilter(this.getAttribute('data-filter'), this);
+            }));
+
+            const defaultBtn = pills.find(p => p.getAttribute('data-filter') === 'all');
+            applyFilter('all', defaultBtn || null);
+        })();
+    </script>
+}
+
+<div class="needs-page">
+    <div class="needs-wrap">
+
+        <div class="needs-header">
+            <div class="kicker">Give · Receive · Remember</div>
+            <h1>Current needs from the UpliftBridge community</h1>
+            <p>Quiet requests. No guilt. No pressure. Take your time.</p>
+        </div>
+
+        <div class="quiet-rules panel">
+            <div>
+                <div class="k">A quiet room for giving</div>
+                <p class="headline">You’re allowed to browse without buying.</p>
+                <p class="sub">We try to make helping feel calm, optional, and dignified — for everyone.</p>
+            </div>
+            <ul class="bullets">
+                <li>No urgency tricks. No countdowns. No guilt.</li>
+                <li>Verification is shown simply, without shaming anyone.</li>
+                <li>Whenever possible, gifts tie to a real item or fee (books, shoes, school costs).</li>
+            </ul>
+        </div>
+
+        <div class="bok" id="bookOfKindness">
+            <div class="bok-left">
+                <div class="bok-k">Book of kindness</div>
+                <div class="bok-quote" id="bokQuote">“In a gentle way, you can shake the world.”</div>
+                <div class="bok-attrib" id="bokAttrib">— Mahatma Gandhi</div>
+            </div>
+            <div class="bok-right">
+                <a class="bok-pill" asp-controller="Needs" asp-action="Create"><span>✍️</span> <span>Post a need</span></a>
+                <a class="bok-pill" href="/Home/HowVerificationWorks"><span>🛡️</span> <span>How verification works</span></a>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <span class="small me-1">Browse by:</span>
+            <button type="button" class="filter-pill is-active" data-filter="all">All</button>
+            <button type="button" class="filter-pill" data-filter="education">Education</button>
+            <button type="button" class="filter-pill" data-filter="sports">Sports</button>
+            <button type="button" class="filter-pill" data-filter="family">Family</button>
+            <button type="button" class="filter-pill" data-filter="higher">Higher verification</button>
+        </div>
+
+        @if (Model == null || !Model.Any())
+        {
+            <div class="panel empty-panel">
+                <h5 class="mb-1">No needs posted yet</h5>
+                <p class="mb-2 small">Be the first to share a need from your school, community or family.</p>
+                <a asp-controller="Needs" asp-action="Create" class="bok-pill">Post a need</a>
+            </div>
+        }
+        else
+        {
+            <div class="panel empty-panel" id="needsEmptyState" style="display:none;">
+                <h5 class="mb-1">Nothing in this filter yet</h5>
+                <p class="mb-2 small">Try another category — or post the first need in this group.</p>
+                <a asp-controller="Needs" asp-action="Create" class="bok-pill">Post a need</a>
+            </div>
+
+            <div class="row g-4">
+                @foreach (var need in (Model ?? Enumerable.Empty<UpliftBridge.Models.Need>()).Where(n => n.IsPublished))
+                {
+                    var percent = need.PercentFunded;
+                    var catLower = (need.Category.ToString() ?? "").ToLowerInvariant();
+                    var verLower = (need.VerificationLevel.ToString() ?? "").ToLowerInvariant();
+                    var img = NeedImage(need);
+
+                    // FOLLOWING THE SCREENSHOT: use ShortSummary if present,
+                    // otherwise show a 160-char preview of Description.
+                    var summary = (string.IsNullOrWhiteSpace(need.ShortSummary)
+                        ? (need.Description?.Length > 160 ? need.Description.Substring(0, 160) + "…" : need.Description)
+                        : need.ShortSummary);
+
+                    var topItem = TopRequestedItem(need.Description ?? "");
+                    var stillNeeded = need.RemainingAmount;
+
+                    <div class="col-md-6 col-xl-4" data-need-card data-category="@catLower" data-verification="@verLower">
+                        <article class="need-card">
+                            <div class="need-media" style="background-image:url('@img');"></div>
+
+                            <div class="need-body">
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <span class="kg-pill">@need.Category</span>
+                                    <span class="kg-pill kg-pill-gold">@PrettyVerification(need.VerificationLevel)</span>
+                                </div>
+
+                                <h2 class="need-title">@need.Title</h2>
+
+                                @if (!string.IsNullOrWhiteSpace(summary))
+                                {
+                                    <p class="need-description">@summary</p>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(topItem))
+                                {
+                                    <div class="small muted mb-2"><span class="fw-semibold">Requested:</span> @topItem</div>
+                                }
+
+                                <p class="need-location mb-2">
+                                    <span class="fw-semibold">Location:</span> @need.Location
+                                </p>
+
+                                <div class="mt-1 mb-2">
+                                    <div class="progress kg-progress">
+                                        <div class="progress-bar kg-progress-bar" style="width:@(percent)%"></div>
+                                    </div>
+                                </div>
+
+                                <div class="need-amount">
+                                    <div class="d-flex justify-content-between align-items-baseline">
+                                        <div>
+                                            <strong>@need.AmountRaised.ToString("C0")</strong>
+                                            <span class="muted"> raised</span>
+                                        </div>
+                                        <div class="small muted">@percent% funded</div>
+                                    </div>
+
+                                    <div class="small muted mt-1">
+                                        Goal <strong>@need.GoalAmount.ToString("C0")</strong> · Still needed <strong>@stillNeeded.ToString("C0")</strong>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3">
+                                    <a asp-controller="Needs" asp-action="Details" asp-route-id="@need.Id" class="btn-support">
+                                        Read story →
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,524 @@
+@model UpliftBridge.Models.Need
+@using UpliftBridge.Models
+@using System.Text.RegularExpressions
+
+@{
+    ViewData["Title"] = (Model.Title ?? "Need") + " — Admin Preview";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["BodyClass"] = "needs-details-page";
+
+    var updates = ViewBag.Updates as List<NeedUpdate> ?? new List<NeedUpdate>();
+    var photos  = ViewBag.Photos as List<string> ?? new List<string>();
+
+    var adminKey = (ViewBag.AdminKey as string) ?? "";
+
+    string Safe(string? s) => (s ?? "").Trim();
+
+    // Return to THIS page after Approve/Reject
+    var returnUrl = (Context?.Request?.Path.ToString() ?? "") + (Context?.Request?.QueryString.ToString() ?? "");
+
+    var raw = Safe(Model.Description);
+
+    var blocks = raw.Split(new[] { "\r\n\r\n", "\n\n" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(b => b.Trim())
+                    .ToList();
+
+    var sections = new List<(string Title, string Body)>();
+
+    foreach (var b in blocks)
+    {
+        var lines = b.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).ToList();
+        if (lines.Count >= 3 && Regex.IsMatch(lines[1], @"^\-+$|^\—+$|^_+$"))
+        {
+            var title = lines[0].Trim();
+            var body  = string.Join("\n", lines.Skip(2)).Trim();
+            sections.Add((title, body));
+        }
+        else
+        {
+            sections.Add(("", b));
+        }
+    }
+
+    string? GetSection(string name)
+        => sections.FirstOrDefault(s => s.Title.Equals(name, StringComparison.OrdinalIgnoreCase)).Body;
+
+    var story = GetSection("Story");
+    var dream = GetSection("Long-term dream");
+    var tried = GetSection("What has already been tried");
+    var timing = GetSection("Timing");
+    var reqItems = GetSection("Requested items");
+
+    var parsedItems = new List<(string Name, string Cost, string Link)>();
+    if (!string.IsNullOrWhiteSpace(reqItems))
+    {
+        var lines = reqItems.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+                            .Select(x => x.Trim())
+                            .Where(x => !string.IsNullOrWhiteSpace(x))
+                            .ToList();
+
+        string curName = "", curCost = "", curLink = "";
+
+        foreach (var line in lines)
+        {
+            var m = Regex.Match(line, @"^\d+\.\s+(.*?)(?:\s+—\s+(.*))?$");
+            if (m.Success)
+            {
+                if (!string.IsNullOrWhiteSpace(curName))
+                    parsedItems.Add((curName, curCost, curLink));
+
+                curName = m.Groups[1].Value.Trim();
+                curCost = m.Groups[2].Value.Trim();
+                curLink = "";
+                continue;
+            }
+
+            var m2 = Regex.Match(line, @"^Link:\s*(.*)$", RegexOptions.IgnoreCase);
+            if (m2.Success)
+            {
+                curLink = m2.Groups[1].Value.Trim();
+                continue;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(curName))
+            parsedItems.Add((curName, curCost, curLink));
+    }
+
+    var goal = Model.GoalAmount;
+    var raised = Model.AmountRaised < 0 ? 0 : Model.AmountRaised;
+    var remaining = goal > 0 ? Math.Max(0m, goal - raised) : 0m;
+    var pct = (goal > 0) ? Math.Min(100, (int)Math.Round((double)(raised / goal * 100m))) : 0;
+
+    var isPending = !Model.IsPublished;
+    var isRejected = !Model.IsPublished && !string.IsNullOrWhiteSpace(Model.RejectionReason);
+}
+
+@section Styles {
+<style>
+  .kg-hero{
+    border-radius: 28px;
+    background: rgba(15,23,42,.80);
+    border: 1px solid rgba(255,255,255,.10);
+    padding: 2.25rem 2.25rem;
+    box-shadow: 0 22px 70px rgba(0,0,0,.35);
+    color: rgba(255,255,255,.92);
+    position: relative;
+    overflow: hidden;
+  }
+  .kg-hero h1{
+    font-family: "Playfair Display", serif;
+    font-weight: 700;
+    font-size: 2.7rem;
+    line-height: 1.1;
+    margin-bottom: .45rem;
+  }
+  .kg-hero-sub{
+    font-weight: 700;
+    color: rgba(255,255,255,.78);
+  }
+  .kg-badges{ display:flex; flex-wrap:wrap; gap:.5rem; margin-top: 1rem; }
+  .kg-badge{
+    border-radius: 999px;
+    padding: .35rem .85rem;
+    font-size: .78rem;
+    font-weight: 900;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(255,255,255,.08);
+    color: rgba(255,255,255,.88);
+  }
+  .kg-badge-warn{
+    background: rgba(245,158,11,.15);
+    border-color: rgba(245,158,11,.35);
+    color: rgba(255,255,255,.92);
+  }
+  .kg-badge-danger{
+    background: rgba(220,38,38,.18);
+    border-color: rgba(220,38,38,.45);
+    color: rgba(255,255,255,.92);
+  }
+
+  .kg-card{
+    border-radius: 24px;
+    background: rgba(255,255,255,.94);
+    border: 1px solid rgba(15,23,42,.08);
+    box-shadow: 0 18px 50px rgba(15,23,42,.10);
+    padding: 1.75rem 1.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .kg-h{
+    font-weight: 950;
+    color: #0b1220;
+    margin-bottom: .75rem;
+  }
+
+  .kg-muted{
+    color: rgba(15,23,42,.66);
+    font-weight: 650;
+  }
+
+  .kg-progress{
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(15,23,42,.10);
+    overflow:hidden;
+  }
+  .kg-progress > div{
+    height:100%;
+    width: 0%;
+    background: linear-gradient(90deg, #e6d3a2, #c8a96a);
+  }
+
+  .kg-btn{
+    border-radius: 999px;
+    padding: .85rem 1.1rem;
+    font-weight: 950;
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.10);
+    color: rgba(255,255,255,.92);
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:.5rem;
+  }
+  .kg-btn:hover{ filter: brightness(1.05); }
+
+  .kg-btn-solid{
+    border-color: rgba(200,169,106,.55);
+    background: linear-gradient(180deg, #e6d3a2, #c8a96a);
+    color: #1b140a;
+    box-shadow: 0 18px 44px rgba(0,0,0,.18);
+  }
+
+  .kg-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .75rem;
+  }
+  .kg-photo{
+    border-radius: 16px;
+    overflow:hidden;
+    border: 1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.04);
+    aspect-ratio: 4/3;
+  }
+  .kg-photo img{
+    width:100%;
+    height:100%;
+    object-fit: cover;
+    display:block;
+  }
+
+  .kg-item{
+    border-radius: 18px;
+    border: 1px solid rgba(15,23,42,.08);
+    background: rgba(15,23,42,.03);
+    padding: .9rem 1rem;
+    display:flex;
+    justify-content:space-between;
+    gap: 1rem;
+    margin-bottom: .6rem;
+  }
+  .kg-item strong{ font-weight: 950; color: #0b1220; }
+  .kg-item a{ font-weight: 850; text-decoration:none; }
+
+  @@media (max-width: 992px){
+    .kg-grid{ grid-template-columns: repeat(2, 1fr); }
+    .kg-hero h1{ font-size: 2.2rem; }
+  }
+  @@media (max-width: 576px){
+    .kg-grid{ grid-template-columns: 1fr; }
+  }
+</style>
+}
+
+<div class="py-5">
+  <div class="container">
+
+    @* ✅ ADMIN ACTION BAR *@
+    <div class="kg-card" style="border:1px solid rgba(245,158,11,.35); background:rgba(255,251,235,.92);">
+      <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
+        <div>
+          <div style="font-weight:950;color:#7c2d12;letter-spacing:.10em;text-transform:uppercase;font-size:.78rem;">
+            Admin preview
+          </div>
+          <div class="kg-muted" style="color:#7c2d12;">
+            Approve publishes. Reject keeps it hidden and stores a reason.
+          </div>
+          @if (isRejected)
+          {
+            <div class="mt-2" style="font-weight:850;color:#b91c1c;">
+              Rejected: @Model.RejectionReason
+            </div>
+          }
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+          <a class="btn btn-outline-dark" style="border-radius:999px;font-weight:900;"
+             asp-controller="AdminNeeds" asp-action="Index" asp-route-key="@adminKey">
+             ← Back to Admin list
+          </a>
+
+          @if (Model.IsPublished)
+          {
+            <a class="btn btn-outline-dark" style="border-radius:999px;font-weight:900;"
+               asp-controller="Needs" asp-action="Details" asp-route-id="@Model.Id" target="_blank">
+               Open public page
+            </a>
+          }
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-3 align-items-center">
+        @if (!Model.IsPublished)
+        {
+          <form asp-controller="AdminNeeds" asp-action="Approve" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="key" value="@adminKey" />
+            <input type="hidden" name="id" value="@Model.Id" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <button type="submit" class="btn btn-success" style="border-radius:999px;font-weight:950;">
+              Approve & Publish
+            </button>
+          </form>
+
+          <form asp-controller="AdminNeeds" asp-action="Reject" method="post" class="d-flex gap-2 flex-wrap">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="key" value="@adminKey" />
+            <input type="hidden" name="id" value="@Model.Id" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+            <input type="text" name="reason" required
+                   class="form-control"
+                   placeholder="Rejection reason (required)"
+                   style="max-width:420px;border-radius:999px;font-weight:750;" />
+
+            <button type="submit" class="btn btn-danger" style="border-radius:999px;font-weight:950;">
+              Reject
+            </button>
+          </form>
+        }
+        else
+        {
+          <span class="badge bg-success" style="font-size:.85rem;padding:.5rem .8rem;border-radius:999px;">
+            Published
+          </span>
+        }
+      </div>
+    </div>
+
+    <div class="kg-hero mb-4">
+      <div class="text-uppercase" style="letter-spacing:.18em;font-weight:900;opacity:.85;font-size:.8rem;">
+        Need preview
+      </div>
+
+      <h1>@(Model.Title ?? $"Need #{Model.Id}")</h1>
+      <div class="kg-hero-sub">
+        @Model.Category • @Model.Location
+      </div>
+
+      <div class="kg-badges">
+        <div class="kg-badge">@Model.VerificationLevel</div>
+        <div class="kg-badge">@pct% funded</div>
+        <div class="kg-badge">Created @Model.CreatedAt.ToString("MMM d, yyyy")</div>
+
+        @if (isRejected)
+        {
+          <div class="kg-badge kg-badge-danger">Rejected</div>
+        }
+        else if (isPending)
+        {
+          <div class="kg-badge kg-badge-warn">Pending</div>
+        }
+        else
+        {
+          <div class="kg-badge">Live</div>
+        }
+      </div>
+
+      <div class="mt-3 d-flex flex-wrap gap-2">
+        <a class="kg-btn" asp-controller="AdminNeeds" asp-action="Index" asp-route-key="@adminKey">← Back</a>
+      </div>
+
+      @if (!Model.IsPublished)
+      {
+        <div class="mt-3 p-3" style="border-radius:18px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);font-weight:750;color:rgba(255,255,255,.86);">
+          This is not public yet. You’re viewing an admin-only preview.
+        </div>
+      }
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-7">
+
+        <div class="kg-card">
+          <div class="d-flex justify-content-between align-items-end mb-2">
+            <div class="kg-h">Funding</div>
+            <div class="kg-muted">
+              @raised.ToString("C0") raised • Goal @goal.ToString("C0") • Still needed @remaining.ToString("C0")
+            </div>
+          </div>
+          <div class="kg-progress mb-2">
+            <div style="width:@pct%"></div>
+          </div>
+          <div class="kg-muted" style="font-size:.9rem;">
+            Amounts shown are pledged. Payments should be collected only after verification.
+          </div>
+        </div>
+
+        @if (photos.Count > 0)
+        {
+          <div class="kg-card">
+            <div class="kg-h">Photos</div>
+            <div class="kg-grid">
+              @foreach (var p in photos)
+              {
+                <div class="kg-photo">
+                  <img src="@p" alt="Need photo" />
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(story))
+        {
+          <div class="kg-card">
+            <div class="kg-h">Story</div>
+            <div class="kg-muted" style="white-space:pre-wrap;">@story</div>
+          </div>
+        }
+
+        <div class="kg-card">
+          <div class="kg-h">Details</div>
+
+          @if (!string.IsNullOrWhiteSpace(dream))
+          {
+            <div class="mb-3">
+              <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Long-term dream</div>
+              <div class="kg-muted" style="white-space:pre-wrap;">@dream</div>
+            </div>
+          }
+
+          @if (!string.IsNullOrWhiteSpace(tried))
+          {
+            <div class="mb-3">
+              <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">What has already been tried</div>
+              <div class="kg-muted" style="white-space:pre-wrap;">@tried</div>
+            </div>
+          }
+
+          @if (!string.IsNullOrWhiteSpace(timing))
+          {
+            <div class="mb-0">
+              <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Timing</div>
+              <div class="kg-muted" style="white-space:pre-wrap;">@timing</div>
+            </div>
+          }
+        </div>
+
+        @if (parsedItems.Count > 0)
+        {
+          <div class="kg-card">
+            <div class="kg-h">Requested items</div>
+
+            @foreach (var it in parsedItems)
+            {
+              <div class="kg-item">
+                <div>
+                  <strong>@it.Name</strong>
+                  @if (!string.IsNullOrWhiteSpace(it.Link))
+                  {
+                    <div class="kg-muted" style="font-size:.9rem;">
+                      <a href="@it.Link" target="_blank" rel="noopener">View link</a>
+                    </div>
+                  }
+                </div>
+                <div style="font-weight:950;color:#0b1220;white-space:nowrap;">
+                  @it.Cost
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        @if (updates.Count > 0)
+        {
+          <div class="kg-card">
+            <div class="kg-h">Updates</div>
+            @foreach (var u in updates)
+            {
+              <div class="mb-3" style="border-left:4px solid rgba(200,169,106,.65);padding-left:1rem;">
+                <div style="font-weight:950;color:#0b1220;">@u.Title</div>
+                <div class="kg-muted" style="font-size:.9rem;">@u.CreatedAtUtc.ToString("MMM d, yyyy") @(!string.IsNullOrWhiteSpace(u.PublicName) ? $"• {u.PublicName}" : "")</div>
+                <div class="kg-muted mt-2" style="white-space:pre-wrap;">@u.Message</div>
+              </div>
+            }
+          </div>
+        }
+
+      </div>
+
+      <div class="col-lg-5">
+
+        <div class="kg-card">
+          <div class="kg-h">Trust level</div>
+          <div class="kg-muted">
+            Verification level: <strong>@Model.VerificationLevel</strong>
+          </div>
+
+          @if (!string.IsNullOrWhiteSpace(Model.VerificationNote))
+          {
+            <div class="mt-2 kg-muted" style="white-space:pre-wrap;">@Model.VerificationNote</div>
+          }
+
+          @if (!string.IsNullOrWhiteSpace(Model.PayTo))
+          {
+            <hr class="my-3" />
+            <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Pay to</div>
+            <div class="kg-muted">@Model.PayTo</div>
+          }
+
+          @if (!string.IsNullOrWhiteSpace(Model.InstitutionName) || !string.IsNullOrWhiteSpace(Model.InstitutionType))
+          {
+            <hr class="my-3" />
+            <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Institution</div>
+            <div class="kg-muted">
+              @($"{Model.InstitutionType} {Model.InstitutionName}".Trim())
+            </div>
+          }
+
+          @if (!string.IsNullOrWhiteSpace(Model.InstitutionPaymentLink))
+          {
+            <div class="mt-2">
+              <a class="btn btn-outline-dark w-100" href="@Model.InstitutionPaymentLink" target="_blank" rel="noopener"
+                 style="border-radius:999px;font-weight:900;">
+                Open official payment link
+              </a>
+              <div class="kg-muted mt-2" style="font-size:.88rem;">
+                This should be an official invoice/payment page (not a handle).
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="kg-card">
+          <div class="kg-h">Admin checklist</div>
+          <ul class="kg-muted" style="font-weight:750;margin-bottom:0;">
+            <li>Story is specific and believable</li>
+            <li>Requested items + costs make sense</li>
+            <li>No personal payment handles in text</li>
+            <li>Photos look relevant (if provided)</li>
+            <li>Institution link is official (if present)</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

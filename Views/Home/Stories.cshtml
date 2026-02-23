@@ -1,0 +1,90 @@
+@model IEnumerable<UpliftBridge.Models.Story>
+
+@{
+    ViewData["Title"] = "Success Stories";
+    ViewData["BodyClass"] = "kg-dark";
+}
+
+@section Styles {
+  <link rel="stylesheet" href="~/css/stories.css" asp-append-version="true" />
+}
+
+<div class="kg-shell">
+  <div class="kg-wrap">
+
+    <div class="kg-hero">
+      <div class="kg-kicker">From almost-giving-up · to giving back</div>
+      <h1 class="kg-title">When help arrives at the very last moment.</h1>
+      <p class="kg-sub">
+        Real stories (published by admins) that show what a single quiet gift can unlock — education, opportunity, dignity.
+      </p>
+    </div>
+
+    @{
+      var hasStories = false;
+      if (Model != null)
+      {
+        foreach (var _ in Model) { hasStories = true; break; }
+      }
+    }
+
+    @if (!hasStories)
+    {
+      <div class="kg-card kg-card-light">
+        <h3 class="mb-2">No stories published yet.</h3>
+        <p class="mb-0">Publish your first story from the admin panel.</p>
+      </div>
+    }
+    else
+    {
+      <div class="row g-4">
+        @foreach (var s in Model!)
+        {
+          var cover = Url.Content(s.CoverImagePath ?? "~/images/stories/story-education.jpg");
+          var preview =
+              !string.IsNullOrWhiteSpace(s.ShortSummary) ? s.ShortSummary :
+              !string.IsNullOrWhiteSpace(s.Body) ? (s.Body.Length > 140 ? s.Body.Substring(0, 140) + "…" : s.Body) :
+              "";
+
+          <div class="col-md-6 col-xl-4">
+            <article class="kg-story-card">
+              <img class="kg-story-img" src="@cover" alt="@s.Title" />
+
+              <div class="kg-meta">
+                @(s.PublishedUtc?.ToString("MMM yyyy") ?? s.CreatedUtc.ToString("MMM yyyy"))
+              </div>
+
+              <h2 class="kg-h2">@s.Title</h2>
+
+              <div class="kg-badges">
+                @if (!string.IsNullOrWhiteSpace(s.VerificationLabel))
+                {
+                  <span class="kg-badge">@s.VerificationLabel</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(s.Tagline))
+                {
+                  <span class="kg-badge">@s.Tagline</span>
+                }
+              </div>
+
+              @if (!string.IsNullOrWhiteSpace(preview))
+              {
+                <p class="kg-preview">@preview</p>
+              }
+
+              <div class="kg-actions">
+                <a class="kg-btn kg-btn-gold" asp-controller="Home" asp-action="StoryDetails" asp-route-id="@s.Id">
+                  Read story →
+                </a>
+                <a class="kg-btn kg-btn-ghost" asp-controller="Needs" asp-action="Index">
+                  Browse needs
+                </a>
+              </div>
+            </article>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</div>

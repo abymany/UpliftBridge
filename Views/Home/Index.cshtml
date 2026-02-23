@@ -1,0 +1,861 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+@section Styles {
+<style>
+    /* Neutral premium palette: ivory + slate + gold (no pink/rainbow) */
+    body {
+        background:
+            radial-gradient(circle at top left, rgba(230, 211, 162, 0.22) 0, rgba(245, 247, 255, 0.40) 42%, rgba(250, 250, 250, 1) 100%);
+    }
+
+    .kg-page {
+        padding-top: 3rem;
+        padding-bottom: 4rem;
+    }
+
+    .kg-hero-badge {
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-size: 0.8rem;
+        color: #667085;
+        font-weight: 700;
+    }
+
+    .kg-hero-title {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(2.3rem, 4vw, 3.3rem);
+        line-height: 1.12;
+        color: #111827;
+    }
+
+    /* Neutral highlight: gold -> graphite (not rainbow, not pink) */
+    .kg-hero-title span.highlight {
+        background: linear-gradient(90deg, #c8a96a, #111827, #e6d3a2);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    .kg-hero-lead {
+        font-size: 1.02rem;
+        color: #475569;
+        max-width: 34rem;
+    }
+
+    .kg-hero-cta .btn-primary {
+        background: linear-gradient(180deg, #e6d3a2, #c8a96a);
+        border-color: rgba(200,169,106,0.65);
+        color: #1b140a;
+        font-weight: 800;
+        padding-inline: 1.9rem;
+        border-radius: 999px;
+        box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+    }
+
+    .kg-hero-cta .btn-primary:hover {
+        filter: brightness(1.04);
+    }
+
+    .kg-hero-cta .btn-outline-secondary {
+        border-radius: 999px;
+        font-weight: 700;
+    }
+
+    .kg-hero-footnote {
+        font-size: 0.92rem;
+        color: #667085;
+        max-width: 34rem;
+    }
+
+    /* Quiet Gift */
+    .quiet-gift-wrap{
+        margin-top: 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .quiet-gift-trigger{
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.78);
+        border: 1px solid rgba(17,24,39,0.10);
+        font-weight: 800;
+        color: #111827;
+        cursor: pointer;
+        box-shadow: 0 10px 22px rgba(0,0,0,0.06);
+    }
+    .quiet-gift-trigger:hover{ background: rgba(255,255,255,0.95); }
+
+    .quiet-gift-card{
+        border-radius: 16px;
+        padding: 10px 12px;
+        background: rgba(255,255,255,0.82);
+        border: 1px solid rgba(17,24,39,0.10);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+        max-width: 420px;
+    }
+    .quiet-gift-text{
+        margin: 0;
+        color: #334155;
+        font-weight: 650;
+    }
+
+    /* “Quiet Promise” */
+    .kg-quiet-promise {
+        max-width: 42rem;
+        margin-top: 0.95rem;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.80);
+        border: 1px solid rgba(15,23,42,0.08);
+        box-shadow: 0 12px 26px rgba(15,23,42,0.06);
+        padding: 12px 14px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .kg-quiet-promise .k {
+        font-size: 0.72rem;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        font-weight: 900;
+        color: #64748b;
+    }
+
+    .kg-quiet-promise .v {
+        color: #111827;
+        font-weight: 750;
+        font-size: 0.96rem;
+        line-height: 1.4;
+    }
+
+    .kg-quiet-promise .mini {
+        color: #475569;
+        font-size: 0.9rem;
+        line-height: 1.45;
+    }
+
+    .kg-quiet-pills {
+        display:flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .kg-quiet-pill {
+        border-radius: 999px;
+        padding: 7px 10px;
+        background: rgba(255,255,255,0.86);
+        border: 1px solid rgba(15,23,42,0.10);
+        color:#0f172a;
+        font-weight: 800;
+        font-size: 0.86rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .kg-quiet-pill:hover { background: rgba(255,255,255,0.98); }
+
+    /* Right-side card: neutral glass, gold accent (no pink) */
+    .kg-dream-card {
+        background:
+            radial-gradient(circle at top left, rgba(255,255,255,1) 0, rgba(248,248,248,1) 45%, rgba(235, 242, 255, 0.55) 100%);
+        border-radius: 28px;
+        padding: 1.8rem 1.8rem 1.4rem 1.8rem;
+        box-shadow:
+            0 20px 35px rgba(15, 23, 42, 0.12),
+            0 0 0 1px rgba(255, 255, 255, 0.9);
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(20px);
+    }
+
+    .kg-dream-orbit {
+        position: absolute;
+        inset: -40%;
+        background:
+            radial-gradient(circle at 20% 0%, rgba(200,169,106,0.45), transparent 60%),
+            radial-gradient(circle at 80% 10%, rgba(148,163,184,0.35), transparent 55%),
+            radial-gradient(circle at 40% 80%, rgba(226,232,240,0.45), transparent 60%);
+        opacity: 0.55;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    .kg-dream-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.25rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #64748b;
+        border: 1px solid rgba(15,23,42,0.08);
+    }
+
+    .kg-dream-title {
+        margin-top: 1rem;
+        font-family: 'Playfair Display', serif;
+        font-size: 1.25rem;
+        color: #111827;
+    }
+
+    .kg-dream-sub {
+        font-size: 0.92rem;
+        color: #475569;
+        margin-bottom: 1.1rem;
+    }
+
+    .kg-dream-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
+
+    .kg-dream-pill {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 18px;
+        padding: 0.6rem 0.7rem;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.87rem;
+        color: #1e293b;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+        transition: transform 0.35s ease, box-shadow 0.35s ease, background 0.35s ease;
+        border: 1px solid rgba(15,23,42,0.06);
+    }
+
+    .kg-dream-pill-emoji { font-size: 1.3rem; }
+
+    .kg-dream-pill:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.15);
+        background: #ffffff;
+    }
+
+    /* Book of Kindness: neutral (no pink) */
+    .kg-book-card {
+        border-radius: 24px;
+        padding: 1.8rem 2rem;
+        background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(246, 244, 238, 0.92));
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(15,23,42,0.08);
+    }
+
+    .kg-book-label {
+        font-size: 0.8rem;
+        font-weight: 900;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+
+    .kg-book-quote {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.1rem;
+        color: #111827;
+    }
+
+    .kg-book-author {
+        font-size: 0.9rem;
+        color: #6b7280;
+    }
+
+    .kg-book-progress {
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.35);
+        overflow: hidden;
+        margin-top: 0.4rem;
+    }
+
+    /* neutral gold progress (no rainbow) */
+    .kg-book-progress-inner {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #e6d3a2, #c8a96a);
+        transition: width 0.2s linear;
+    }
+
+    .kg-book-actions {
+        display:flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 2px;
+    }
+
+    .kg-mini-btn {
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.85);
+        border: 1px solid rgba(15,23,42,0.10);
+        font-weight: 850;
+        color:#0f172a;
+        text-decoration:none;
+        display:inline-flex;
+        gap: 8px;
+        align-items:center;
+        cursor: pointer;
+    }
+
+    .kg-mini-btn:hover { background: rgba(255,255,255,0.98); }
+
+    .kg-mini-proof {
+        font-size: 0.9rem;
+        color:#475569;
+        font-weight: 650;
+    }
+
+    /* Sections */
+    .kg-section-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.6rem;
+        color: #111827;
+    }
+
+    .kg-section-subtitle {
+        color: #6b7280;
+        max-width: 32rem;
+    }
+
+    .kg-step-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 1.3rem 1.4rem;
+        box-shadow: 0 12px 25px rgba(15, 23, 42, 0.06);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        border: 1px solid rgba(15,23,42,0.06);
+    }
+
+    .kg-step-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 18px 30px rgba(15, 23, 42, 0.1);
+    }
+
+    .kg-step-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: #0f172a;
+        background: linear-gradient(135deg, rgba(230,211,162,0.85), rgba(148,163,184,0.45));
+        border: 1px solid rgba(15,23,42,0.06);
+    }
+
+    .kg-step-title { font-weight: 750; color: #111827; }
+    .kg-step-text { font-size: 0.92rem; color: #4b5563; }
+
+    /* Featured needs */
+    .kg-need-card {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 1.1rem 1.2rem;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+
+    .kg-need-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 24px rgba(15, 23, 42, 0.08);
+        border-color: rgba(200,169,106,0.45);
+    }
+
+    .kg-need-pill {
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+
+    .kg-need-title { font-weight: 750; color: #111827; }
+    .kg-need-location { font-size: 0.86rem; color: #6b7280; }
+
+    .kg-need-progress-bg {
+        height: 6px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        overflow: hidden;
+    }
+
+    .kg-need-progress-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #e6d3a2, #c8a96a);
+    }
+
+    .kg-need-amount { font-size: 0.86rem; color: #111827; margin-top: 0.35rem; }
+    .kg-need-meaning { margin-top: 8px; font-size: 0.9rem; color:#475569; line-height: 1.45; }
+
+    /* Why strip (neutral) */
+    .kg-why-strip {
+        margin-top: 3.5rem;
+        padding: 1.3rem 1.5rem;
+        border-radius: 20px;
+        background: linear-gradient(90deg, rgba(246,244,238,0.95), rgba(235,242,255,0.55));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+        border: 1px solid rgba(15,23,42,0.08);
+    }
+
+    .kg-why-text { font-size: 0.98rem; color: #1e293b; font-weight: 650; }
+    .kg-why-link { font-weight: 800; }
+
+    /* Float */
+    @@keyframes floatCard {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-6px); }
+        100% { transform: translateY(0px); }
+    }
+
+    .kg-dream-card-animated {
+        animation: floatCard 9s ease-in-out infinite;
+    }
+
+    @@media (max-width: 991.98px) {
+        .kg-page { padding-top: 2.2rem; }
+        .kg-hero-title { font-size: 2.2rem; }
+        .kg-dream-card { margin-top: 2rem; }
+        .kg-book-card { padding: 1.5rem 1.4rem; }
+    }
+</style>
+}
+
+<div class="kg-page container">
+    <!-- HERO -->
+    <section class="row align-items-center g-4">
+        <div class="col-lg-6">
+            <div class="kg-hero-badge mb-2">
+                GIVE · RECEIVE · REMEMBER
+            </div>
+
+            <h1 class="kg-hero-title mb-3">
+                Help the world<br />
+                grow a <span class="highlight">bigger pie</span><br />
+                of possibility.
+            </h1>
+
+            <p class="kg-hero-lead mb-4">
+                UpliftBridge is a quiet space where people help each other study, play, build and heal —
+                so no dream is left behind just because money or facilities are missing.
+            </p>
+
+            <div class="kg-hero-cta mb-3 d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" asp-controller="Needs" asp-action="Index">
+                    Find a quiet gift
+                </a>
+                <a class="btn btn-outline-secondary" asp-controller="Needs" asp-action="Create">
+                    Post a need
+                </a>
+            </div>
+
+            <!-- Quiet promise -->
+            <div class="kg-quiet-promise">
+                <div class="k">Quiet promise</div>
+                <div class="v">You’re allowed to browse without giving.</div>
+                <div class="mini">
+                    No urgency tricks. No guilt. Verification is shown simply. Whenever possible, gifts go to an item or fee.
+                </div>
+
+                <div class="kg-quiet-pills">
+                    <a class="kg-quiet-pill" href="/Home/HowVerificationWorks">
+                        <span>🛡️</span><span>How verification works</span>
+                    </a>
+                    <a class="kg-quiet-pill" asp-controller="Needs" asp-action="Index">
+                        <span>🎁</span><span>Browse needs calmly</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quiet Gift (toggle) -->
+            <div class="quiet-gift-wrap">
+                <button class="quiet-gift-trigger" type="button" onclick="toggleQuietGift()">
+                    🎁 A quiet gift for you
+                </button>
+
+                <div class="quiet-gift-card" id="quietGiftCard" hidden>
+                    <p class="quiet-gift-text">
+                        You don’t have to fix everything. Sometimes noticing is enough.
+                    </p>
+                </div>
+            </div>
+
+            <p class="kg-hero-footnote mt-3">
+                “If the world is a pie, let’s spend our lives making it bigger for everyone — not fighting over crumbs.”
+            </p>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="kg-dream-card kg-dream-card-animated">
+                <div class="kg-dream-orbit"></div>
+
+                <div class="kg-dream-chip">
+                    <span>✨ Quiet joy of giving</span>
+                </div>
+
+                <h2 class="kg-dream-title">
+                    One gift can ripple for generations.
+                </h2>
+                <p class="kg-dream-sub">
+                    Help create more doctors, scientists, athletes, teachers and caretakers —
+                    one quiet act of kindness at a time.
+                </p>
+
+                <div class="kg-dream-grid mb-2">
+                    <div class="kg-dream-pill">
+                        <span class="kg-dream-pill-emoji">📚</span>
+                        <span>Scholarships & laptops<br /><small>For students on the edge of giving up.</small></span>
+                    </div>
+                    <div class="kg-dream-pill">
+                        <span class="kg-dream-pill-emoji">👟</span>
+                        <span>Shoes for athletes<br /><small>So talent isn’t lost to bare feet.</small></span>
+                    </div>
+                    <div class="kg-dream-pill">
+                        <span class="kg-dream-pill-emoji">🎒</span>
+                        <span>School basics<br /><small>Books, uniforms, exam fees.</small></span>
+                    </div>
+                    <div class="kg-dream-pill">
+                        <span class="kg-dream-pill-emoji">🧥</span>
+                        <span>Quiet luxuries<br /><small>Saved for someone else’s joy.</small></span>
+                    </div>
+                </div>
+
+                <p class="text-muted small mb-0">
+                    You can give from empathy, or simply from the joy of seeing someone randomly blessed.
+                    UpliftBridge holds both — responsible help and playful surprise.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- BOOK OF KINDNESS -->
+    <section class="kg-book mt-4">
+        <div class="kg-book-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <div>
+                    <div class="kg-book-label">BOOK OF KINDNESS</div>
+                    <small class="text-muted">A gentle thought every few moments, from many voices and traditions.</small>
+                </div>
+                <span class="badge rounded-pill bg-light text-dark border border-light-subtle">
+                    Today’s kindness · Auto
+                </span>
+            </div>
+
+            <div id="kgBookQuote" class="kg-book-quote">
+                Loading a gentle thought…
+            </div>
+            <div id="kgBookAuthor" class="kg-book-author"></div>
+
+            <div class="kg-book-progress">
+                <div id="kgBookProgress" class="kg-book-progress-inner"></div>
+            </div>
+
+            <div class="kg-book-actions">
+                <div class="left d-flex gap-2 flex-wrap">
+                    <button type="button" class="kg-mini-btn" id="kgSaveQuoteBtn">
+                        <span>📌</span><span>Save this quote</span>
+                    </button>
+                    <a class="kg-mini-btn" href="/Home/HowVerificationWorks">
+                        <span>🛡️</span><span>Why this is safe</span>
+                    </a>
+                </div>
+                <div class="kg-mini-proof" id="kgMiniProof">
+                    A calm place to give — built for trust.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="mt-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+            <div>
+                <h2 class="kg-section-title mb-1">How UpliftBridge works</h2>
+                <p class="kg-section-subtitle mb-0">
+                    Simple steps so both givers and receivers can feel safe, seen and respected.
+                </p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="kg-step-card">
+                    <div class="kg-step-number mb-1">1</div>
+                    <div class="kg-step-title">A real need is shared</div>
+                    <p class="kg-step-text mb-0">
+                        Students, families or helpers describe what is needed — books, shoes, fees, equipment or a small joy gift.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kg-step-card">
+                    <div class="kg-step-number mb-1">2</div>
+                    <div class="kg-step-title">The story is gently verified</div>
+                    <p class="kg-step-text mb-0">
+                        School staff, community leaders or documents help confirm that the need is genuine and respectful.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kg-step-card">
+                    <div class="kg-step-number mb-1">3</div>
+                    <div class="kg-step-title">A gift reaches at the right time</div>
+                    <p class="kg-step-text mb-0">
+                        You give quietly. They receive without shame. And together you widen the world’s pie of opportunity.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURED NEEDS (STATIC EXAMPLES FOR NOW) -->
+    <section class="kg-featured-section" style="margin-top:3.5rem;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="kg-section-title mb-1" style="font-size:1.4rem;">Featured needs</h2>
+                <p class="kg-section-subtitle mb-0">
+                    A few sample stories. Visit the Needs page to see everything as the platform grows.
+                </p>
+            </div>
+            <a class="btn btn-outline-secondary btn-sm" asp-controller="Needs" asp-action="Index">
+                See all needs
+            </a>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="kg-need-card">
+                    <div class="kg-need-pill">EDUCATION</div>
+                    <div class="kg-need-title">Laptops for village school</div>
+                    <p class="small mb-1">
+                        10 basic laptops so students in Punjab can learn computer skills.
+                    </p>
+                    <div class="kg-need-location">
+                        Location: Hope Valley Public School, Punjab, India
+                    </div>
+                    <div class="kg-need-progress-bg mt-2">
+                        <div class="kg-need-progress-fill" style="width: 40%;"></div>
+                    </div>
+                    <div class="kg-need-amount">
+                        <strong>$6,000</strong> raised of $15,000 goal
+                    </div>
+                    <div class="kg-need-meaning">
+                        Meaning: keeps a class learning through the year instead of dropping behind.
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="kg-need-card">
+                    <div class="kg-need-pill">SPORTS</div>
+                    <div class="kg-need-title">Running shoes for young athlete</div>
+                    <p class="small mb-1">
+                        A regional runner raising funds for proper shoes and training kit.
+                    </p>
+                    <div class="kg-need-location">
+                        Location: Detroit, USA
+                    </div>
+                    <div class="kg-need-progress-bg mt-2">
+                        <div class="kg-need-progress-fill" style="width: 70%;"></div>
+                    </div>
+                    <div class="kg-need-amount">
+                        <strong>$700</strong> raised of $1,000 goal
+                    </div>
+                    <div class="kg-need-meaning">
+                        Meaning: protects talent from being lost to injury and lack of basics.
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="kg-need-card">
+                    <div class="kg-need-pill">FAMILY</div>
+                    <div class="kg-need-title">Groceries for single mother</div>
+                    <p class="small mb-1">
+                        One-time support for monthly groceries and school snacks for her kids.
+                    </p>
+                    <div class="kg-need-location">
+                        Location: Nairobi, Kenya
+                    </div>
+                    <div class="kg-need-progress-bg mt-2">
+                        <div class="kg-need-progress-fill" style="width: 55%;"></div>
+                    </div>
+                    <div class="kg-need-amount">
+                        <strong>$275</strong> raised of $500 goal
+                    </div>
+                    <div class="kg-need-meaning">
+                        Meaning: keeps kids fed enough to focus in school, without shame.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WHY UpliftBridge STRIP -->
+    <section class="kg-why-strip mt-4">
+        <div class="kg-why-text">
+            You don’t just want to give money — you want to grow the number of people who can heal, teach and build for the world.
+            UpliftBridge is your quiet corner for that.
+        </div>
+        <a asp-controller="Home" asp-action="About" class="kg-why-link">
+            Read why UpliftBridge exists →
+        </a>
+    </section>
+</div>
+
+@section Scripts {
+<script>
+    (function () {
+        const quoteEl = document.getElementById('kgBookQuote');
+        const authorEl = document.getElementById('kgBookAuthor');
+        const progressEl = document.getElementById('kgBookProgress');
+        const saveBtn = document.getElementById('kgSaveQuoteBtn');
+        const miniProof = document.getElementById('kgMiniProof');
+
+        if (!quoteEl || !authorEl || !progressEl) return;
+
+        const DISPLAY_SECONDS = 14;
+        let quotes = [];
+        let currentIndex = 0;
+        let elapsed = 0;
+        let timerId = null;
+        let progressTimerId = null;
+
+        function pickNextIndex() {
+            if (quotes.length <= 1) return 0;
+            let next = currentIndex;
+            while (next === currentIndex) next = Math.floor(Math.random() * quotes.length);
+            return next;
+        }
+
+        function currentQuoteObj() {
+            if (!quotes.length) return null;
+            return quotes[currentIndex] || null;
+        }
+
+        function renderQuote() {
+            if (!quotes.length) return;
+            currentIndex = pickNextIndex();
+            const q = quotes[currentIndex];
+            quoteEl.textContent = '“' + q.text + '”';
+            authorEl.textContent = q.author ? '— ' + q.author : '';
+            elapsed = 0;
+            progressEl.style.width = '0%';
+        }
+
+        function startRotation() {
+            if (timerId) clearInterval(timerId);
+            if (progressTimerId) clearInterval(progressTimerId);
+
+            timerId = setInterval(() => { renderQuote(); }, DISPLAY_SECONDS * 1000);
+            progressTimerId = setInterval(() => {
+                elapsed += 0.2;
+                const pct = Math.min(elapsed / DISPLAY_SECONDS * 100, 100);
+                progressEl.style.width = pct + '%';
+            }, 200);
+        }
+
+        function initWithQuotes(data) {
+            if (!Array.isArray(data) || !data.length) return;
+            quotes = data;
+
+            try {
+                const todayKey = new Date().toISOString().slice(0, 10);
+                const stored = JSON.parse(localStorage.getItem('kgQuoteDay') || '{}');
+                let startIndex = 0;
+
+                if (stored.date === todayKey && typeof stored.index === 'number' && stored.index < quotes.length) {
+                    startIndex = stored.index;
+                } else {
+                    startIndex = Math.floor(Math.random() * quotes.length);
+                    localStorage.setItem('kgQuoteDay', JSON.stringify({ date: todayKey, index: startIndex }));
+                }
+
+                currentIndex = Math.max(0, Math.min(quotes.length - 1, startIndex));
+                const q = quotes[currentIndex];
+                quoteEl.textContent = '“' + q.text + '”';
+                authorEl.textContent = q.author ? '— ' + q.author : '';
+            } catch (e) {
+                currentIndex = 0;
+                renderQuote();
+            }
+
+            startRotation();
+        }
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function () {
+                const q = currentQuoteObj();
+                if (!q) return;
+
+                try {
+                    const saved = JSON.parse(localStorage.getItem('kgSavedQuotes') || '[]');
+                    const key = (q.text || '') + '||' + (q.author || '');
+                    const exists = saved.some(x => ((x.text || '') + '||' + (x.author || '')) === key);
+                    if (!exists) {
+                        saved.unshift({ text: q.text, author: q.author, savedAt: new Date().toISOString() });
+                        localStorage.setItem('kgSavedQuotes', JSON.stringify(saved.slice(0, 30)));
+                    }
+                    if (miniProof) miniProof.textContent = 'Saved. Little things, done consistently, change lives.';
+                } catch (e) {
+                    if (miniProof) miniProof.textContent = 'Saved (this browser).';
+                }
+            });
+        }
+
+        fetch('/data/quotes.json', { cache: 'no-store' })
+            .then(resp => resp.ok ? resp.json() : [])
+            .then(data => {
+                if (!data || !data.length) {
+                    quoteEl.textContent = 'Kindness is the language that every heart understands.';
+                    authorEl.textContent = '— Unknown';
+                    return;
+                }
+                initWithQuotes(data);
+            })
+            .catch(() => {
+                quoteEl.textContent = 'When in doubt, choose the kinder action.';
+                authorEl.textContent = '— UpliftBridge';
+            });
+    })();
+
+    function toggleQuietGift(){
+        const card = document.getElementById('quietGiftCard');
+        if(!card) return;
+        card.hidden = !card.hidden;
+    }
+    window.toggleQuietGift = toggleQuietGift;
+</script>
+}

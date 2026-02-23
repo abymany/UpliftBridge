@@ -1,0 +1,558 @@
+@model UpliftBridge.Models.FundNeedViewModel
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Pledge support";
+
+    var remaining = Model.RemainingAmount;
+    var hasRemaining = remaining > 0;
+    var isFullyFunded = Model.IsFullyFunded;
+
+    // Smart suggestions (reduce decision fatigue)
+    var suggested = new decimal[] { 25m, 50m, 100m };
+
+    // If close to goal, offer “finish it” option
+    // plus a “halfway” anchor that feels meaningful but not huge
+    decimal finishAmt = hasRemaining ? remaining : 0m;
+    decimal halfRemaining = hasRemaining ? Math.Max(5m, Math.Round(remaining / 2m, 0)) : 0m;
+}
+
+@section Styles {
+<style>
+    .kg-fund-shell{
+        padding: 3.5rem 0 4rem;
+        background: linear-gradient(180deg, rgba(37,99,235,0.06), rgba(255,255,255,0));
+    }
+
+    .kg-topline{
+        text-transform: uppercase;
+        letter-spacing: .14em;
+        font-size: .78rem;
+        color: #64748b;
+        font-weight: 800;
+    }
+
+    .kg-permission{
+        margin-top: 6px;
+        color:#64748b;
+        font-size: .95rem;
+        line-height: 1.45;
+    }
+
+    .kg-card{
+        background:#fff;
+        border: 1px solid #eef2f7;
+        border-radius: 22px;
+        box-shadow: 0 18px 45px rgba(15,23,42,0.10);
+    }
+
+    .kg-pad{ padding: 22px; }
+    @@media (min-width: 768px){ .kg-pad{ padding: 28px; } }
+
+    .kg-h1{
+        font-family: 'Playfair Display', serif;
+        font-size: 1.9rem;
+        line-height: 1.12;
+        margin: 0 0 10px;
+        letter-spacing: -0.01em;
+        color:#0f172a;
+    }
+
+    .kg-sub{
+        color:#475569;
+        font-size: 1rem;
+        line-height: 1.55;
+    }
+
+    .meaning-box{
+        border:1px solid rgba(15,23,42,0.06);
+        border-radius: 18px;
+        padding: 12px;
+        background: linear-gradient(135deg, rgba(255,234,243,0.65), rgba(255,247,230,0.55));
+        margin-top: 14px;
+    }
+
+    .meaning-box .k{
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .10em;
+        text-transform: uppercase;
+        color:#be123c;
+        margin-bottom: 6px;
+    }
+
+    .meaning-box ul{
+        margin: 0;
+        padding-left: 18px;
+        color:#334155;
+        font-weight: 650;
+    }
+
+    .meaning-box li{ margin: 6px 0; }
+
+    .suggestions{
+        display:flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .amt-chip{
+        border-radius: 999px;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        font-weight: 950;
+        color:#0f172a;
+        cursor: pointer;
+        transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+        user-select: none;
+        position: relative;
+    }
+
+    .amt-chip:hover{
+        transform: translateY(-1px);
+        box-shadow: 0 10px 18px rgba(15,23,42,0.10);
+        background: #f9fafb;
+    }
+
+    .amt-chip.is-active{
+        border-color: rgba(37,99,235,0.35);
+        box-shadow: 0 12px 24px rgba(15,23,42,0.10);
+        background: #fff;
+    }
+
+    .chip-tag{
+        font-size: .72rem;
+        font-weight: 950;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color:#166534;
+        background:#ecfdf3;
+        border:1px solid #bbf7d0;
+        border-radius: 999px;
+        padding: 2px 8px;
+        margin-left: 8px;
+        white-space: nowrap;
+    }
+
+    .fee-box{
+        border: 1px solid #eef2f7;
+        background: #fafbff;
+        border-radius: 18px;
+        padding: 12px;
+        margin-top: 12px;
+    }
+
+    .fee-row{
+        display:flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .fee-row:last-child{ margin-bottom: 0; }
+
+    .fee-k{
+        color:#64748b;
+        font-size: .9rem;
+        font-weight: 750;
+    }
+
+    .fee-v{
+        color:#0f172a;
+        font-weight: 950;
+        font-size: .95rem;
+    }
+
+    .kg-muted{
+        color:#64748b;
+        font-size: .92rem;
+        line-height: 1.45;
+    }
+
+    .tiny{
+        font-size: .88rem;
+        color:#64748b;
+    }
+
+    .kg-cta{
+        border-radius: 999px;
+        padding: 12px 16px;
+        font-weight: 950;
+        letter-spacing: .01em;
+    }
+
+    .trustline{
+        margin-top: 10px;
+        display:flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        color:#64748b;
+        font-size: .9rem;
+        line-height: 1.4;
+    }
+
+    .trust-badge{
+        display:inline-flex;
+        align-items:center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        background:#f1f5ff;
+        border: 1px solid #dbeafe;
+        color:#1d4ed8;
+        font-weight: 900;
+        font-size: .85rem;
+        white-space: nowrap;
+    }
+
+    .divider{
+        height:1px;
+        background:#eef2f7;
+        margin: 14px 0;
+    }
+
+    .micro-meaning{
+        margin-top: 10px;
+        border:1px dashed rgba(15,23,42,0.12);
+        border-radius: 16px;
+        padding: 10px 12px;
+        background: #fff;
+        color:#334155;
+        font-weight: 700;
+        font-size: .92rem;
+        line-height: 1.35;
+    }
+
+    .micro-meaning strong{ color:#0f172a; }
+
+    .funded-banner{
+        border-radius: 18px;
+        padding: 12px;
+        background:#f3f4f6;
+        border:1px solid #e5e7eb;
+        color:#111827;
+        font-weight: 800;
+    }
+</style>
+}
+
+<div class="kg-fund-shell">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+                <div class="kg-topline">Give quietly · Help directly</div>
+                <div class="kg-permission">
+                    No pressure: you can read this page and leave without pledging. If it feels right, you’ll know.
+                </div>
+
+                <div class="row g-4 mt-2">
+                    <!-- LEFT -->
+                    <div class="col-lg-6">
+                        <div class="kg-card kg-pad">
+                            <h1 class="kg-h1">Pledge quiet support</h1>
+
+                            <p class="text-muted mb-1">You’re supporting:</p>
+                            <div class="fw-semibold" style="font-size:1.05rem; color:#0f172a;">
+                                @Model.Title
+                            </div>
+
+                            @if (hasRemaining)
+                            {
+                                <div class="micro-meaning">
+                                    <strong>@remaining.ToString("C0")</strong> still needed.
+                                    If you choose to give more than what’s left, we’ll cap it to the remaining amount.
+                                </div>
+                            }
+
+                            <div class="divider"></div>
+
+                            <p class="kg-sub mb-2">
+                                Whenever possible, we route gifts directly to a school, store, clinic, or trusted organization —
+                                not through the requester personally. We keep the story respectful and the process calm.
+                            </p>
+
+                            <ul class="small text-muted ps-3 mb-0">
+                                <li>Gifts tie to specific items/fees when possible.</li>
+                                <li>A small platform fee keeps UpliftBridge running.</li>
+                                <li>You can give anonymously if you prefer.</li>
+                            </ul>
+
+                            <div class="meaning-box">
+                                <div class="k">What your gift becomes</div>
+                                <ul>
+                                    <li><strong>A real item/fee covered</strong> (books, shoes, exam fee, equipment)</li>
+                                    <li><strong>A quiet receipt</strong> (demo now; later Stripe/PayPal)</li>
+                                    <li><strong>A protected process</strong> that respects dignity</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-light border-0 mt-3 mb-0 small">
+                                Demo only: payments are not live yet. On launch, this connects to a secure checkout (Stripe or similar).
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT -->
+                    <div class="col-lg-6">
+                        <div class="kg-card kg-pad">
+
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h2 class="h5 fw-bold mb-0">Choose a pledge amount</h2>
+                            </div>
+
+                            @if (isFullyFunded)
+                            {
+                                <div class="funded-banner mt-3">
+                                    This need is already fully funded. Thank you for checking.
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="kg-muted mt-2 mb-3">
+                                    Pick a good amount and move on — or type any number.
+                                </p>
+
+                                <div class="suggestions" aria-label="Suggested amounts">
+                                    @if (hasRemaining && finishAmt > 0)
+                                    {
+                                        <button type="button" class="amt-chip" data-amt="@finishAmt">
+                                            Cover remaining (@finishAmt.ToString("C0"))
+                                        </button>
+                                    }
+
+                                    @if (hasRemaining && halfRemaining > 0)
+                                    {
+                                        <button type="button" class="amt-chip" data-amt="@halfRemaining">
+                                            Half of what’s left (@halfRemaining.ToString("C0"))
+                                            <span class="chip-tag">popular</span>
+                                        </button>
+                                    }
+
+                                    <button type="button" class="amt-chip" data-amt="25">$25</button>
+                                    <button type="button" class="amt-chip" data-amt="50">$50</button>
+                                    <button type="button" class="amt-chip" data-amt="100">$100</button>
+                                </div>
+
+                                <form asp-action="Fund" asp-controller="Needs" method="post" novalidate>
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden" asp-for="NeedId" />
+                                    <input type="hidden" asp-for="Title" />
+
+                                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                                    <div class="form-check mb-3">
+                                        <!-- ✅ FIX: bind to IsAnonymous so POST receives it -->
+                                        <input class="form-check-input" asp-for="IsAnonymous" id="anonToggle" />
+                                        <label class="form-check-label fw-semibold" for="anonToggle">
+                                            Give anonymously (no name/email)
+                                        </label>
+                                        <div class="tiny">Receipt email is optional now (and will be clearer on launch).</div>
+                                    </div>
+
+                                    <div id="donorFields" class="row g-2 mb-3">
+                                        <div class="col-md-6">
+                                            <label asp-for="DonorName" class="form-label">Name (optional)</label>
+                                            <input asp-for="DonorName" class="form-control" placeholder="Optional (for receipt / thank-you)" />
+                                            <span asp-validation-for="DonorName" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label asp-for="DonorEmail" class="form-label">Email (optional)</label>
+                                            <input asp-for="DonorEmail" class="form-control" placeholder="Optional (for receipt / updates)" />
+                                            <span asp-validation-for="DonorEmail" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label asp-for="ItemCost" class="form-label">Gift amount</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input asp-for="ItemCost" class="form-control" type="number" step="0.01" min="50" />
+                                        </div>
+                                        <span asp-validation-for="ItemCost" class="text-danger small"></span>
+                                        <div class="tiny mt-1">Minimum gift amount is $50.</div>
+                                        <div class="tiny mt-1">
+                                            Tip: Think of an item/fee you’re covering (books, shoes, exam fee).
+                                        </div>
+                                        <div id="impactLine" class="tiny mt-1" style="display:none;"></div>
+
+                                        <!-- ✅ NEW: tip dropdown + today-you-pay + hidden fields -->
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Platform support</label>
+                                                <select class="form-select" id="tipPercent" name="TipPercent">
+                                                    <option value="0">0%</option>
+                                                    <option value="1" selected>1%</option>
+                                                    <option value="2">2%</option>
+                                                    <option value="5">5%</option>
+                                                </select>
+                                                <div class="tiny mt-1">You pay this on UpliftBridge (Stripe / Apple Pay). The gift itself is completed on the official site.</div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label">Today you pay</label>
+                                                <div class="form-control" id="payTodayDisplay" style="font-weight:900;">$0.00</div>
+                                                <input type="hidden" name="TipAmount" id="tipAmount" value="0" />
+                                            </div>
+                                        </div>
+
+                                        <div class="fee-box">
+                                            <div class="fee-row">
+                                                <div class="fee-k">Gift amount (paid on official site)</div>
+                                                <div class="fee-v" id="giftAmountDisplay">$0.00</div>
+                                            </div>
+                                            <div class="fee-row">
+                                                <div class="fee-k">Platform support</div>
+                                                <div class="fee-v" id="feeDisplay">$0.00</div>
+                                            </div>
+                                            <div class="fee-row">
+                                                <div class="fee-k">Today you pay (platform support)</div>
+                                                <div class="fee-v" id="totalDisplay">$0.00</div>
+                                            </div>
+                                        </div>
+
+                                        <details class="mt-2">
+                                            <summary class="tiny" style="cursor:pointer;">Why is there a platform fee?</summary>
+                                            <div class="tiny mt-1">
+                                                It keeps UpliftBridge running (hosting, moderation, verification work, support).
+                                                The goal is trust-first help — not viral pressure.
+                                            </div>
+                                        </details>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary w-100 kg-cta">
+                                        Confirm pledge
+                                    </button>
+
+                                    <div class="trustline">
+                                        <span>✅ You can give anonymously</span>
+                                        <span class="text-muted">•</span>
+                                        <span>✅ Demo receipt saved</span>
+                                        <span class="text-muted">•</span>
+                                        <span>✅ Secure checkout on launch</span>
+                                    </div>
+
+                                    <p class="small text-muted mt-3 mb-0">
+                                        This is a pledge only. Payment is collected later after verification.
+                                    </p>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            const amountInput = document.querySelector('[name="ItemCost"]');
+            const feeDisplay = document.getElementById('feeDisplay');
+            const totalDisplay = document.getElementById('totalDisplay');
+            const giftAmountDisplay = document.getElementById('giftAmountDisplay');
+            const impactLine = document.getElementById('impactLine');
+
+            const tipPercentSelect = document.getElementById('tipPercent');
+            const payTodayDisplay = document.getElementById('payTodayDisplay');
+            const tipAmountHidden = document.getElementById('tipAmount');
+
+            const anonToggle = document.getElementById('anonToggle');
+            const donorFields = document.getElementById('donorFields');
+
+            const chips = Array.from(document.querySelectorAll('.amt-chip'));
+
+            // Culture-safe numeric injection (no commas, no locale decimals)
+            const remaining = parseFloat('@Model.RemainingAmount.ToString(CultureInfo.InvariantCulture)');
+
+            if (!amountInput || !feeDisplay || !totalDisplay) return;
+
+            function formatMoney(value) {
+                if (isNaN(value)) return '$0.00';
+                return '$' + value.toFixed(2);
+            }
+
+            function updateSummary() {
+                const raw = parseFloat(amountInput.value);
+                const tipPct = parseFloat(tipPercentSelect?.value || "1");
+
+                if (isNaN(raw) || raw <= 0) {
+                    feeDisplay.textContent = '$0.00';
+                    totalDisplay.textContent = '$0.00';
+                    if (giftAmountDisplay) giftAmountDisplay.textContent = '$0.00';
+                    if (payTodayDisplay) payTodayDisplay.textContent = '$0.00';
+                    if (tipAmountHidden) tipAmountHidden.value = "0";
+                    if (impactLine) impactLine.style.display = 'none';
+                    return;
+                }
+
+                const fee = Math.round(raw * (tipPct / 100) * 100) / 100;
+
+                // Option A: donor pays the GIFT offsite; pays only platform support here
+                feeDisplay.textContent = formatMoney(fee);
+                totalDisplay.textContent = formatMoney(fee);
+                if (giftAmountDisplay) giftAmountDisplay.textContent = formatMoney(raw);
+
+                if (payTodayDisplay) payTodayDisplay.textContent = formatMoney(fee);
+                if (tipAmountHidden) tipAmountHidden.value = fee.toFixed(2);
+
+                if (impactLine && remaining > 0) {
+                    const capped = Math.min(raw, remaining);
+                    const pct = Math.max(1, Math.min(100, Math.round((capped / remaining) * 100)));
+                    impactLine.textContent = `This would cover about ${pct}% of what’s still needed (we cap to remaining).`;
+                    impactLine.style.display = '';
+                } else if (impactLine) {
+                    impactLine.style.display = 'none';
+                }
+            }
+
+            function setActiveChip(btn) {
+                chips.forEach(b => b.classList.remove('is-active'));
+                if (btn) btn.classList.add('is-active');
+            }
+
+            chips.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const v = parseFloat(btn.getAttribute('data-amt'));
+                    if (!isNaN(v)) {
+                        amountInput.value = v.toFixed(2);
+                        setActiveChip(btn);
+                        updateSummary();
+                        amountInput.focus();
+                    }
+                });
+            });
+
+            if (anonToggle && donorFields) {
+                anonToggle.addEventListener('change', () => {
+                    const on = anonToggle.checked;
+                    donorFields.style.display = on ? 'none' : '';
+                    if (on) {
+                        const name = document.querySelector('[name="DonorName"]');
+                        const email = document.querySelector('[name="DonorEmail"]');
+                        if (name) name.value = '';
+                        if (email) email.value = '';
+                    }
+                });
+            }
+
+            amountInput.addEventListener('input', () => {
+                setActiveChip(null);
+                updateSummary();
+            });
+
+            tipPercentSelect?.addEventListener('change', updateSummary);
+
+            updateSummary();
+        })();
+    </script>
+}

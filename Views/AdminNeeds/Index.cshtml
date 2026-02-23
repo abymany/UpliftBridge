@@ -1,0 +1,272 @@
+@model IEnumerable<UpliftBridge.Models.Need>
+
+@{
+    ViewData["Title"] = "Admin — Needs";
+    var key = Context.Request.Query["key"].ToString();
+    ViewBag.AdminKey = key;
+}
+
+<style>
+  /* Keep rounded corners clean, but allow action cell content */
+  .kg-card-light { overflow: hidden; }
+  td.kg-col-actions { overflow: visible; }
+
+  /* Allow horizontal scroll if needed (better than clipping buttons) */
+  .kg-card-light .table-responsive{
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table.kg-table{
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .kg-table td, .kg-table th{
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Title column can use 2 lines */
+  th.kg-col-title, td.kg-col-title{
+    width: 34%;
+    white-space: normal;
+  }
+
+  td.kg-col-title .title,
+  td.kg-col-title .summary{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+  }
+
+  td.kg-col-title .title{
+    -webkit-line-clamp: 1;
+    font-weight: 900;
+    color:#0b1220;
+  }
+
+  td.kg-col-title .summary{
+    -webkit-line-clamp: 1;
+  }
+
+  /* Actions column: fixed and predictable */
+  th.kg-col-actions, td.kg-col-actions{
+    width: 320px;
+    min-width: 320px;
+  }
+
+  .kg-actions{
+    display: grid;
+    gap: .55rem;
+    align-content: start;
+  }
+
+  .kg-actions-top{
+    display:flex;
+    gap:.5rem;
+    align-items:center;
+    justify-content:flex-end;
+    flex-wrap: wrap;
+  }
+
+  .kg-actions-bottom{
+    display:grid;
+    gap:.5rem;
+  }
+
+  .approve-row{
+    display:flex;
+    gap:.5rem;
+    justify-content:flex-end;
+  }
+
+  .kg-reject-row{
+    display:grid;
+    grid-template-columns: 1fr auto;
+    gap:.5rem;
+    align-items:center;
+  }
+
+  .kg-reject-row input{
+    width: 100%;
+    min-width: 0;
+  }
+
+  .reject-reason{
+    border-radius: 999px;
+  }
+
+  /* Responsive: hide lower priority columns */
+  @@media (max-width: 1200px){ .kg-col-created { display:none; } }
+  @@media (max-width: 1050px){ .kg-col-published { display:none; } }
+  @@media (max-width: 950px){  .kg-col-location { display:none; } }
+  @@media (max-width: 820px){
+    .kg-col-category { display:none; }
+    th.kg-col-actions, td.kg-col-actions{ width: 300px; min-width: 300px; }
+  }
+  @@media (max-width: 700px){  .kg-col-raised { display:none; } }
+</style>
+
+<div class="kg-wrap kg-shell">
+  <div class="kg-glass">
+
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="kg-kicker">ADMIN</div>
+        <h1 class="kg-title">Needs</h1>
+        <p class="kg-muted mb-0">All needs in the database (draft + published).</p>
+      </div>
+
+      <partial name="_AdminLinks" />
+    </div>
+
+    <hr style="border-color: rgba(255,255,255,.12);" />
+
+    <div class="kg-card-light">
+      <div class="table-responsive">
+        <table class="table mb-0 kg-table">
+          <thead>
+            <tr>
+              <th style="width:70px;">ID</th>
+              <th class="kg-col-title">Title</th>
+              <th class="kg-col-category" style="width:120px;">Category</th>
+              <th class="kg-col-location">Location</th>
+              <th style="width:120px;">Goal</th>
+              <th class="kg-col-raised" style="width:120px;">Raised</th>
+              <th class="kg-col-published" style="width:120px;">Published</th>
+              <th class="kg-col-created" style="width:160px;">Created</th>
+              <th class="kg-col-actions">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+          @if (Model == null || !Model.Any())
+          {
+            <tr>
+              <td colspan="9" class="text-center text-muted p-4">No needs found.</td>
+            </tr>
+          }
+          else
+          {
+            foreach (var n in Model)
+            {
+              <tr>
+                <td class="text-muted">#@n.Id</td>
+
+                <td class="kg-col-title">
+                  <div class="title">@n.Title</div>
+
+                  @if (!string.IsNullOrWhiteSpace(n.ShortSummary))
+                  {
+                    <div class="text-muted small summary">@n.ShortSummary</div>
+                  }
+
+                  @if (!string.IsNullOrWhiteSpace(n.RejectionReason) && !n.IsPublished)
+                  {
+                    <div class="text-danger small mt-1">Rejected: @n.RejectionReason</div>
+                  }
+                </td>
+
+                <td class="text-muted kg-col-category">@n.Category</td>
+                <td class="text-muted kg-col-location">@n.Location</td>
+                <td>@n.GoalAmount.ToString("C")</td>
+                <td class="text-muted kg-col-raised">@n.AmountRaised.ToString("C")</td>
+
+                <td class="kg-col-published">
+                  @if (n.IsPublished)
+                  {
+                    <span class="badge bg-success">Yes</span>
+                  }
+                  else
+                  {
+                    <span class="badge bg-secondary">No</span>
+                  }
+                </td>
+
+                <td class="text-muted small kg-col-created">
+                  @n.CreatedAt.ToLocalTime().ToString("g")
+                </td>
+
+                <td class="kg-col-actions">
+                  <div class="kg-actions">
+
+                    <div class="kg-actions-top">
+                      <a class="kg-btn kg-btn-ghost"
+                         asp-controller="AdminNeeds"
+                         asp-action="See"
+                         asp-route-id="@n.Id"
+                         asp-route-key="@key">
+                        See
+                      </a>
+
+                      @if (!n.IsPublished)
+                      {
+                        <span class="badge bg-warning text-dark">Pending</span>
+                      }
+                      else
+                      {
+                        <span class="badge bg-success">Live</span>
+                      }
+                    </div>
+
+                    @if (!n.IsPublished)
+                    {
+                      <div class="kg-actions-bottom">
+
+                        <div class="approve-row">
+                          <form asp-controller="AdminNeeds" asp-action="Approve"
+                                asp-route-key="@key" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@n.Id" />
+                            <button type="submit"
+                                    class="kg-btn"
+                                    style="background:#16a34a;border-color:#16a34a;color:#fff;">
+                              Approve
+                            </button>
+                          </form>
+                        </div>
+
+                        <form asp-controller="AdminNeeds" asp-action="Reject"
+                              asp-route-key="@key" method="post" class="kg-reject-row">
+                          @Html.AntiForgeryToken()
+                          <input type="hidden" name="id" value="@n.Id" />
+
+                          <input type="text" name="reason"
+                                 class="form-control form-control-sm reject-reason"
+                                 placeholder="Rejection reason (required)"
+                                 required
+                                 autocomplete="off"
+                                 spellcheck="true" />
+
+                          <button type="submit"
+                                  class="kg-btn"
+                                  style="background:#dc2626;border-color:#dc2626;color:#fff;">
+                            Reject
+                          </button>
+                        </form>
+
+                      </div>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <a class="kg-btn kg-btn-ghost"
+         asp-controller="Admin" asp-action="Index"
+         asp-route-key="@key">Back to Admin</a>
+    </div>
+
+  </div>
+</div>
