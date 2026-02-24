@@ -200,7 +200,6 @@ namespace UpliftBridge.Controllers
         // ----------------------------------
         // FUND – POST (creates Stripe checkout for platform support ONLY)
         // ----------------------------------
-        // POST: /Needs/Fund  (creates Stripe Checkout for platform support ONLY)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Fund(FundNeedViewModel vm)
@@ -255,7 +254,7 @@ namespace UpliftBridge.Controllers
             var options = new SessionCreateOptions
             {
                 Mode = "payment",
-                PaymentMethodTypes = new List<string> { "card" }, // Apple Pay will show automatically when available
+                PaymentMethodTypes = new List<string> { "card" },
                 LineItems = new List<SessionLineItemOptions>
                 {
                     new SessionLineItemOptions
@@ -294,8 +293,6 @@ namespace UpliftBridge.Controllers
 
         // ----------------------------------
         // FUND SUCCESS – Stripe returns here (Option A)
-        // Stripe charge = platform support only
-        // Raised total increases immediately by "giftAmount" as a pledge signal
         // ----------------------------------
         [HttpGet]
         public IActionResult FundSuccess(int needId, string session_id)
@@ -322,7 +319,7 @@ namespace UpliftBridge.Controllers
             var need = _context.Needs.FirstOrDefault(n => n.Id == needId && n.IsPublished);
             if (need == null) return NotFound();
 
-            // amounts from metadata (server computed when creating session)
+            // amounts from metadata
             decimal giftAmount = 0m;
             decimal platformSupport = 0m;
 
@@ -338,7 +335,7 @@ namespace UpliftBridge.Controllers
             if (Math.Abs(stripePaid - platformSupport) > 0.02m)
                 return RedirectToAction("Fund", new { id = needId });
 
-            // Idempotent: already processed this session
+            // Idempotent
             var existing = _context.GiftOrders.FirstOrDefault(o => o.StripeSessionId == session_id);
             GiftOrder order;
 
@@ -359,9 +356,8 @@ namespace UpliftBridge.Controllers
                     DonorName = null,
                     DonorEmail = isAnon ? null : (string.IsNullOrWhiteSpace(donorEmail) ? null : donorEmail),
 
-                    // ✅ NEW NAMES (match your updated model)
-                    PledgedGiftAmount = giftAmount,           // offsite intention
-                    PlatformSupportPaid = platformSupport,    // Stripe paid today
+                    PledgedGiftAmount = giftAmount,
+                    PlatformSupportPaid = platformSupport,
 
                     PaymentStatus = PaymentStatus.Paid,
 
@@ -369,14 +365,11 @@ namespace UpliftBridge.Controllers
                     StripePaymentIntentId = session.PaymentIntentId ?? "",
                     CreatedAt = DateTime.UtcNow,
 
-                    // ✅ keep (but ONLY if this property+enum exist with this exact spelling)
                     OffsiteStatus = OffsiteGiftStatus.Unconfirmed
                 };
 
                 _context.GiftOrders.Add(order);
 
-                // OPTION A CHOICE: Raise the goal immediately as "pledged intent"
-                // This is ONLY acceptable if your UI says it clearly.
                 need.AmountRaised += giftAmount;
                 _context.Needs.Update(need);
 
@@ -401,7 +394,6 @@ namespace UpliftBridge.Controllers
             var need = _context.Needs.AsNoTracking().FirstOrDefault(n => n.Id == id && n.IsPublished);
             if (need == null) return NotFound();
 
-            // This is where Option A happens: send them to the official payment link
             return View(need);
         }
 
