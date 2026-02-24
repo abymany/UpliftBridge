@@ -64,17 +64,18 @@ if (app.Environment.IsProduction() && string.IsNullOrWhiteSpace(stripeKey))
 if (!string.IsNullOrWhiteSpace(stripeKey))
     StripeConfiguration.ApiKey = stripeKey;
 
-// Migrations + Seed
+// -------------------------
+// MIGRATIONS + SEED
+// -------------------------
+// Apply migrations ONLY in Development (local).
+// In Production (Render), run migrations manually to avoid crash loops.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    // Always apply migrations (local + production)
-    db.Database.Migrate();
-
-    // Seed ONLY in Development (your computer), never in Production
     if (app.Environment.IsDevelopment())
     {
+        db.Database.Migrate();
         SeedData.Initialize(db);
     }
 }

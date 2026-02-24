@@ -6,9 +6,9 @@ using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Stripe.Checkout;
 using UpliftBridge.Data;
 using UpliftBridge.Models;
-using Stripe.Checkout;
 
 namespace UpliftBridge.Controllers
 {
@@ -30,7 +30,7 @@ namespace UpliftBridge.Controllers
         {
             var needs = _context.Needs
                 .AsNoTracking()
-                .Where(n => n.IsPublished)
+                .Where(n => n.IsPublished == true)
                 .OrderByDescending(n => n.CreatedAt)
                 .ToList();
 
@@ -44,13 +44,13 @@ namespace UpliftBridge.Controllers
         {
             var need = _context.Needs
                 .AsNoTracking()
-                .FirstOrDefault(n => n.Id == id && n.IsPublished);
+                .FirstOrDefault(n => n.Id == id && n.IsPublished == true);
 
             if (need == null) return NotFound();
 
             var updates = _context.NeedUpdates
                 .AsNoTracking()
-                .Where(u => u.NeedId == id && u.IsVisible)
+                .Where(u => u.NeedId == id && u.IsVisible == true)
                 .OrderByDescending(u => u.CreatedAtUtc)
                 .ToList();
 
@@ -142,7 +142,7 @@ namespace UpliftBridge.Controllers
 
             SaveNeedPhotos(need.Id, vm);
 
-            // ✅ Pending needs must NOT go to Details (Details is published-only)
+            // Pending needs must NOT go to Details (Details is published-only)
             return RedirectToAction(nameof(CreateSuccess), new { id = need.Id });
         }
 
@@ -174,11 +174,13 @@ namespace UpliftBridge.Controllers
         // ----------------------------------
         // FUND – GET (shows funding + platform tip)
         // ----------------------------------
-        // GET: /Needs/Fund/5
         [HttpGet]
         public IActionResult Fund(int id)
         {
-            var need = _context.Needs.AsNoTracking().FirstOrDefault(n => n.Id == id && n.IsPublished);
+            var need = _context.Needs
+                .AsNoTracking()
+                .FirstOrDefault(n => n.Id == id && n.IsPublished == true);
+
             if (need == null) return NotFound();
 
             var remaining = Math.Max(0m, need.GoalAmount - need.AmountRaised);
@@ -205,7 +207,9 @@ namespace UpliftBridge.Controllers
         public IActionResult Fund(FundNeedViewModel vm)
         {
             // Re-load need from DB (never trust posted RemainingAmount etc.)
-            var need = _context.Needs.FirstOrDefault(n => n.Id == vm.NeedId && n.IsPublished);
+            var need = _context.Needs
+                .FirstOrDefault(n => n.Id == vm.NeedId && n.IsPublished == true);
+
             if (need == null) return NotFound();
 
             var remaining = Math.Max(0m, need.GoalAmount - need.AmountRaised);
@@ -248,7 +252,6 @@ namespace UpliftBridge.Controllers
             }
 
             var cents = (long)Math.Round(platformSupport * 100m, 0);
-
             var domain = $"{Request.Scheme}://{Request.Host}";
 
             var options = new SessionCreateOptions
@@ -303,11 +306,9 @@ namespace UpliftBridge.Controllers
             var sessionService = new SessionService();
             var session = sessionService.Get(session_id);
 
-            // must be paid
             if (!string.Equals(session.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase))
                 return RedirectToAction("Fund", new { id = needId });
 
-            // metadata guard
             if (session.Metadata == null ||
                 !session.Metadata.TryGetValue("needId", out var metaNeedId) ||
                 !int.TryParse(metaNeedId, out var parsedNeedId) ||
@@ -316,10 +317,9 @@ namespace UpliftBridge.Controllers
                 return RedirectToAction("Fund", new { id = needId });
             }
 
-            var need = _context.Needs.FirstOrDefault(n => n.Id == needId && n.IsPublished);
+            var need = _context.Needs.FirstOrDefault(n => n.Id == needId && n.IsPublished == true);
             if (need == null) return NotFound();
 
-            // amounts from metadata
             decimal giftAmount = 0m;
             decimal platformSupport = 0m;
 
@@ -331,11 +331,9 @@ namespace UpliftBridge.Controllers
 
             var stripePaid = ((session.AmountTotal ?? 0) / 100m);
 
-            // Stripe truth must match platformSupport
             if (Math.Abs(stripePaid - platformSupport) > 0.02m)
                 return RedirectToAction("Fund", new { id = needId });
 
-            // Idempotent
             var existing = _context.GiftOrders.FirstOrDefault(o => o.StripeSessionId == session_id);
             GiftOrder order;
 
@@ -386,12 +384,15 @@ namespace UpliftBridge.Controllers
         }
 
         // ----------------------------------
-        // COMPLETE DONATION – send them to official payment link page
+        // COMPLETE DONATION – official payment link page
         // ----------------------------------
         [HttpGet]
         public IActionResult CompleteDonation(int id)
         {
-            var need = _context.Needs.AsNoTracking().FirstOrDefault(n => n.Id == id && n.IsPublished);
+            var need = _context.Needs
+                .AsNoTracking()
+                .FirstOrDefault(n => n.Id == id && n.IsPublished == true);
+
             if (need == null) return NotFound();
 
             return View(need);
