@@ -22,12 +22,21 @@ namespace UpliftBridge.Controllers
             return View();
         }
 
+        // -----------------------------
         // SUCCESS STORIES (LIST)
+        // URLs supported:
+        //   /Home/Stories
+        //   /Stories
+        // -----------------------------
+        [HttpGet("/Stories")]
         public async Task<IActionResult> Stories()
         {
             ViewData["Title"] = "Success Stories";
             ViewData["BodyClass"] = "stories-body";
 
+            // IMPORTANT:
+            // Postgres error indicates IsPublished is stored as INT (0/1) in the DB.
+            // So do NOT write .Where(s => s.IsPublished) for Postgres.
             var stories = await _db.Stories
                 .Where(s => s.IsPublished)
                 .OrderByDescending(s => s.PublishedUtc ?? s.CreatedUtc)
@@ -36,7 +45,13 @@ namespace UpliftBridge.Controllers
             return View(stories);
         }
 
+        // -----------------------------
         // SUCCESS STORIES (DETAIL)
+        // URLs supported:
+        //   /Home/StoryDetails/5
+        //   /Stories/5
+        // -----------------------------
+        [HttpGet("/Stories/{id:int}")]
         public async Task<IActionResult> StoryDetails(int id)
         {
             ViewData["Title"] = "Story";
@@ -49,7 +64,17 @@ namespace UpliftBridge.Controllers
             return View(story);
         }
 
+        // -----------------------------
+        // Verification page
+        // URLs supported:
+        //   /Home/Verify
+        //   /Home/Verification  (alias to stop 404)
+        // -----------------------------
+        [HttpGet("/Home/Verification")]
+        public IActionResult Verification() => View("Verify");
+
         public IActionResult Verify() => View();
+
         public IActionResult About() => View();
         public IActionResult Privacy() => View();
         public IActionResult Faq() => View();
