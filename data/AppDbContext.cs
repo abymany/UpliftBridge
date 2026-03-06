@@ -15,7 +15,7 @@ namespace UpliftBridge.Data
 
         public DbSet<Story> Stories { get; set; }
 
-        // ✅ REQUIRED for updates / thank-you posts
+        // REQUIRED for updates / thank-you posts
         public DbSet<NeedUpdate> NeedUpdates { get; set; }
 
         public DbSet<NeedPhoto> NeedPhotos => Set<NeedPhoto>();
@@ -24,12 +24,9 @@ namespace UpliftBridge.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // -------------------------------------------------------
-            // IMPORTANT:
             // If your Postgres schema stores these as INTEGER (0/1),
             // this conversion prevents:
             // "argument of WHERE must be type boolean, not type integer"
-            // -------------------------------------------------------
 
             modelBuilder.Entity<Need>()
                 .Property(x => x.IsPublished)
@@ -39,7 +36,11 @@ namespace UpliftBridge.Data
                 .Property(x => x.IsVisible)
                 .HasConversion<int>();
 
-            // If any of these exist as bool in C# but int in DB, uncomment:
+            modelBuilder.Entity<Story>()
+                .Property(x => x.IsPublished)
+                .HasConversion<int>();
+
+            // Uncomment later only if those columns are also int(0/1) in DB:
             // modelBuilder.Entity<Need>()
             //     .Property(x => x.PreferDirectToInstitution)
             //     .HasConversion<int>();
