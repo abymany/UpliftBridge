@@ -26,7 +26,7 @@ namespace UpliftBridge.Controllers
         // SUCCESS STORIES (LIST)
         // URLs supported:
         //   /Home/Stories
-        //   /Stories
+        //   /Stories            (alias)
         // -----------------------------
         [HttpGet("/Stories")]
         public async Task<IActionResult> Stories()
@@ -35,8 +35,8 @@ namespace UpliftBridge.Controllers
             ViewData["BodyClass"] = "stories-body";
 
             // IMPORTANT:
-            // Postgres error indicates IsPublished is stored as INT (0/1) in the DB.
-            // So do NOT write .Where(s => s.IsPublished) for Postgres.
+            // This assumes Story.IsPublished is bool in C# AND the DB column is boolean.
+            // If your DB column is currently int(0/1), fix the DB in Step 2 below.
             var stories = await _db.Stories
                 .Where(s => s.IsPublished)
                 .OrderByDescending(s => s.PublishedUtc ?? s.CreatedUtc)
@@ -49,7 +49,7 @@ namespace UpliftBridge.Controllers
         // SUCCESS STORIES (DETAIL)
         // URLs supported:
         //   /Home/StoryDetails/5
-        //   /Stories/5
+        //   /Stories/5          (alias)
         // -----------------------------
         [HttpGet("/Stories/{id:int}")]
         public async Task<IActionResult> StoryDetails(int id)
@@ -65,16 +65,17 @@ namespace UpliftBridge.Controllers
         }
 
         // -----------------------------
-        // Verification page
+        // VERIFICATION PAGE
         // URLs supported:
         //   /Home/Verify
-        //   /Home/Verification  (alias to stop 404)
+        //   /Home/Verification   (alias)
+        //   /Verify              (alias)
         // -----------------------------
+        [HttpGet("/Verify")]
         [HttpGet("/Home/Verification")]
-        public IActionResult Verification() => View("Verify");
-
         public IActionResult Verify() => View();
 
+        // Keep your existing pages
         public IActionResult About() => View();
         public IActionResult Privacy() => View();
         public IActionResult Faq() => View();
