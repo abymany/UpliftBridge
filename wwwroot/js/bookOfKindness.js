@@ -1,4 +1,3 @@
-console.log("BOOK OF KINDNESS JS NEW VERSION LOADED");
 // wwwroot/js/bookOfKindness.js
 (function () {
   const elQuote = document.getElementById("bokQuoteText");
