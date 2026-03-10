@@ -384,3 +384,20 @@ body.needs-create-page main,
 body.needs-create-page .site-main{
   background: transparent !important;
 }
+.bok-sub {
+    font-size: 0.9rem;
+    color: #7a7a7a;
+    margin-top: 6px;
+}
+
+.bok-divider {
+    width: 1px;
+    background: rgba(0,0,0,0.06);
+    margin: 0 16px;
+}
+
+.bok {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
