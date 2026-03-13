@@ -96,7 +96,7 @@ if (!string.IsNullOrWhiteSpace(stripeKey))
 // Default: NO migrations on boot in Production.
 // To run migrations on Render: set env var RUN_MIGRATIONS=true for ONE deploy, then remove it.
 var runMigrations = string.Equals(
-    builder.Configuration["RUN_MIGRATIONS"],
+    Environment.GetEnvironmentVariable("RUN_MIGRATIONS"),
     "true",
     StringComparison.OrdinalIgnoreCase
 );
