@@ -17,7 +17,7 @@ namespace UpliftBridge.Data
 
         public DbSet<NeedUpdate> NeedUpdates { get; set; }
 
-        public DbSet<NeedPhoto> NeedPhotos => Set<NeedPhoto>();
+        public DbSet<NeedPhoto> NeedPhotos { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

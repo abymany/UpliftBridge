@@ -1,5 +1,4 @@
 using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace UpliftBridge.Models
 {
@@ -7,13 +6,12 @@ namespace UpliftBridge.Models
     {
         public int Id { get; set; }
 
-        [Required]
         public int NeedId { get; set; }
-        public Need? Need { get; set; }
 
-        [Required, MaxLength(400)]
-        public string Path { get; set; } = ""; // "/uploads/needs/3/abc.jpg"
+        public string Path { get; set; } = string.Empty;
 
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        public Need? Need { get; set; }
     }
 }
