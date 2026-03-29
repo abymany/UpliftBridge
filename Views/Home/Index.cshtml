@@ -746,70 +746,104 @@
 
         if (!quoteEl || !authorEl || !progressEl) return;
 
-        const DISPLAY_SECONDS = 14;
+        const DISPLAY_MS = 14000;
         let quotes = [];
         let currentIndex = 0;
-        let elapsed = 0;
-        let timerId = null;
-        let progressTimerId = null;
-
-        function pickNextIndex() {
-            if (quotes.length <= 1) return 0;
-            let next = currentIndex;
-            while (next === currentIndex) next = Math.floor(Math.random() * quotes.length);
-            return next;
-        }
+        let rotateTimer = null;
+        let progressTimer = null;
+        let progressStart = 0;
 
         function currentQuoteObj() {
             if (!quotes.length) return null;
             return quotes[currentIndex] || null;
         }
 
-        function renderQuote() {
+        function randomIndexExcept(current) {
+            if (quotes.length <= 1) return 0;
+
+            let next = current;
+            while (next === current) {
+                next = Math.floor(Math.random() * quotes.length);
+            }
+            return next;
+        }
+
+        function paintQuote(index) {
             if (!quotes.length) return;
-            currentIndex = pickNextIndex();
+
+            currentIndex = Math.max(0, Math.min(index, quotes.length - 1));
             const q = quotes[currentIndex];
+
             quoteEl.textContent = '“' + q.text + '”';
             authorEl.textContent = q.author ? '— ' + q.author : '';
-            elapsed = 0;
             progressEl.style.width = '0%';
         }
 
-        function startRotation() {
-            if (timerId) clearInterval(timerId);
-            if (progressTimerId) clearInterval(progressTimerId);
+        function nextQuote() {
+            if (!quotes.length) return;
+            paintQuote(randomIndexExcept(currentIndex));
+        }
 
-            timerId = setInterval(() => { renderQuote(); }, DISPLAY_SECONDS * 1000);
-            progressTimerId = setInterval(() => {
-                elapsed += 0.2;
-                const pct = Math.min(elapsed / DISPLAY_SECONDS * 100, 100);
-                progressEl.style.width = pct + '%';
-            }, 200);
+        function stopTimers() {
+            if (rotateTimer) {
+                clearInterval(rotateTimer);
+                rotateTimer = null;
+            }
+            if (progressTimer) {
+                clearInterval(progressTimer);
+                progressTimer = null;
+            }
+        }
+
+        function startProgress() {
+            progressStart = Date.now();
+            progressEl.style.width = '0%';
+
+            progressTimer = setInterval(() => {
+                const elapsed = Date.now() - progressStart;
+                const pct = Math.min((elapsed / DISPLAY_MS) * 100, 100);
+                progressEl.style.width = pct.toFixed(2) + '%';
+            }, 120);
+        }
+
+        function startRotation() {
+            stopTimers();
+            startProgress();
+
+            rotateTimer = setInterval(() => {
+                nextQuote();
+                startProgress();
+            }, DISPLAY_MS);
         }
 
         function initWithQuotes(data) {
             if (!Array.isArray(data) || !data.length) return;
+
             quotes = data;
 
             try {
                 const todayKey = new Date().toISOString().slice(0, 10);
                 const stored = JSON.parse(localStorage.getItem('kgQuoteDay') || '{}');
-                let startIndex = 0;
 
-                if (stored.date === todayKey && typeof stored.index === 'number' && stored.index < quotes.length) {
+                let startIndex = 0;
+                if (
+                    stored.date === todayKey &&
+                    typeof stored.index === 'number' &&
+                    stored.index >= 0 &&
+                    stored.index < quotes.length
+                ) {
                     startIndex = stored.index;
                 } else {
                     startIndex = Math.floor(Math.random() * quotes.length);
-                    localStorage.setItem('kgQuoteDay', JSON.stringify({ date: todayKey, index: startIndex }));
+                    localStorage.setItem('kgQuoteDay', JSON.stringify({
+                        date: todayKey,
+                        index: startIndex
+                    }));
                 }
 
-                currentIndex = Math.max(0, Math.min(quotes.length - 1, startIndex));
-                const q = quotes[currentIndex];
-                quoteEl.textContent = '“' + q.text + '”';
-                authorEl.textContent = q.author ? '— ' + q.author : '';
+                paintQuote(startIndex);
             } catch (e) {
-                currentIndex = 0;
-                renderQuote();
+                paintQuote(0);
             }
 
             startRotation();
@@ -824,38 +858,62 @@
                     const saved = JSON.parse(localStorage.getItem('kgSavedQuotes') || '[]');
                     const key = (q.text || '') + '||' + (q.author || '');
                     const exists = saved.some(x => ((x.text || '') + '||' + (x.author || '')) === key);
+
                     if (!exists) {
-                        saved.unshift({ text: q.text, author: q.author, savedAt: new Date().toISOString() });
+                        saved.unshift({
+                            text: q.text,
+                            author: q.author,
+                            savedAt: new Date().toISOString()
+                        });
                         localStorage.setItem('kgSavedQuotes', JSON.stringify(saved.slice(0, 30)));
                     }
-                    if (miniProof) miniProof.textContent = 'Saved. Little things, done consistently, change lives.';
+
+                    if (miniProof) {
+                        miniProof.textContent = 'Saved. Little things, done consistently, change lives.';
+                    }
                 } catch (e) {
-                    if (miniProof) miniProof.textContent = 'Saved (this browser).';
+                    if (miniProof) {
+                        miniProof.textContent = 'Saved (this browser).';
+                    }
                 }
             });
         }
+
+        document.addEventListener('visibilitychange', function () {
+            if (!quotes.length) return;
+
+            if (document.hidden) {
+                stopTimers();
+            } else {
+                startRotation();
+            }
+        });
 
         fetch('/data/quotes.json', { cache: 'no-store' })
             .then(resp => resp.ok ? resp.json() : [])
             .then(data => {
                 if (!data || !data.length) {
-                    quoteEl.textContent = 'Kindness is the language that every heart understands.';
+                    quoteEl.textContent = '“Kindness is the language that every heart understands.”';
                     authorEl.textContent = '— Unknown';
+                    progressEl.style.width = '100%';
                     return;
                 }
+
                 initWithQuotes(data);
             })
             .catch(() => {
-                quoteEl.textContent = 'When in doubt, choose the kinder action.';
+                quoteEl.textContent = '“When in doubt, choose the kinder action.”';
                 authorEl.textContent = '— UpliftBridge';
+                progressEl.style.width = '100%';
             });
     })();
 
-    function toggleQuietGift(){
+    function toggleQuietGift() {
         const card = document.getElementById('quietGiftCard');
-        if(!card) return;
+        if (!card) return;
         card.hidden = !card.hidden;
     }
+
     window.toggleQuietGift = toggleQuietGift;
 </script>
 }
