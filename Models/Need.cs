@@ -65,6 +65,9 @@ namespace UpliftBridge.Models
         public string InstitutionType { get; set; } = string.Empty;
 
         [MaxLength(400)]
+        public string InstitutionFullAddress { get; set; } = string.Empty;
+
+        [MaxLength(400)]
         public string InstitutionPaymentLink { get; set; } = string.Empty;
 
         public bool PreferDirectToInstitution { get; set; } = false;
@@ -91,7 +94,6 @@ namespace UpliftBridge.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public string SubmissionToken { get; set; } = "";
-
 
         // computed label for admin table
         [NotMapped]

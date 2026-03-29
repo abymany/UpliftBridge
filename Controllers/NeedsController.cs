@@ -144,6 +144,7 @@ namespace UpliftBridge.Controllers
 
                 InstitutionName = (vm.InstitutionName ?? "").Trim(),
                 InstitutionType = (vm.InstitutionType ?? "").Trim(),
+                InstitutionFullAddress = (vm.InstitutionFullAddress ?? "").Trim(),
                 InstitutionPaymentLink = (vm.InstitutionPaymentLink ?? "").Trim(),
                 PreferDirectToInstitution = vm.PreferDirectToInstitution,
 

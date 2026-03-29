@@ -97,6 +97,9 @@ namespace UpliftBridge.Models
 
         [Display(Name = "Prefer donor to pay the institution directly (recommended when available)")]
         public bool PreferDirectToInstitution { get; set; }
+        [MaxLength(400)]
+        [Display(Name = "Full institution address (private)")]
+        public string? InstitutionFullAddress { get; set; }
 
         // -----------------------------
         // Contact (private)
