@@ -171,6 +171,10 @@
 </div>
 
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 🔥 FIXED SCRIPT LOADING -->
+<script defer src="~/js/bookOfKindness.js?v=@DateTime.UtcNow.Ticks"></script>
+
 @await RenderSectionAsync("Scripts", required: false)
 
 </body>
