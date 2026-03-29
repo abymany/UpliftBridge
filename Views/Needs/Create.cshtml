@@ -227,7 +227,8 @@
 
               <div class="col-md-6">
                 <label class="form-label" asp-for="CityCountry"></label>
-                <input class="form-control" asp-for="CityCountry" />
+                <input class="form-control" id="locationInput" asp-for="CityCountry" placeholder="Start typing city or country..." list="locationSuggestions" />
+                <datalist id="locationSuggestions"></datalist>
                 <span class="text-danger" asp-validation-for="CityCountry"></span>
               </div>
             </div>
@@ -297,13 +298,20 @@
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label" asp-for="GoalAmount"></label>
-                <input class="form-control" asp-for="GoalAmount" type="number" step="0.01" min="1" />
+                <input
+                  class="form-control"
+                  asp-for="GoalAmount"
+                  id="goalAmount"
+                  placeholder="Enter amount"
+                  inputmode="decimal"
+                  autocomplete="off" />
                 <span class="text-danger" asp-validation-for="GoalAmount"></span>
+                <div class="form-text" id="currencyHint">Currency: USD</div>
               </div>
 
               <div class="col-md-6">
                 <label class="form-label" asp-for="Deadline"></label>
-                <input class="form-control" asp-for="Deadline" />
+                <input type="date" class="form-control" asp-for="Deadline" />
                 <span class="text-danger" asp-validation-for="Deadline"></span>
               </div>
             </div>
@@ -477,34 +485,117 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
-      (function () {
+    document.addEventListener("DOMContentLoaded", function () {
+
+        // DIRECT PAY TOGGLE
         const toggle = document.getElementById('directPayToggle');
         const wrap = document.getElementById('payLinkWrap');
         const input = document.getElementById('institutionPaymentLinkInput');
 
-        if (!toggle || !wrap || !input) return;
-
-        function sync() {
-          const on = toggle.checked;
-          wrap.style.display = on ? '' : 'none';
-          input.disabled = !on;
-          if (!on) input.value = '';
+        if (toggle && wrap && input) {
+            function sync() {
+                const on = toggle.checked;
+                wrap.style.display = on ? '' : 'none';
+                input.disabled = !on;
+                if (!on) input.value = '';
+            }
+            toggle.addEventListener('change', sync);
+            sync();
         }
 
-        toggle.addEventListener('change', sync);
-        sync();
-      })();
-    </script>
-
-    <script>
-      (function () {
+        // CLEAN OPTIONAL FIELDS
         const trash = new Set(["na", "n/a", "none", "-", "--", "null", "0"]);
         document.querySelectorAll(".kg-optional-item").forEach(el => {
-          el.addEventListener("blur", () => {
-            const v = (el.value || "").trim().toLowerCase();
-            if (trash.has(v)) el.value = "";
-          });
+            el.addEventListener("blur", () => {
+                const v = (el.value || "").trim().toLowerCase();
+                if (trash.has(v)) el.value = "";
+            });
         });
-      })();
+
+        // LOCATION SUGGESTIONS + CURRENCY HINT
+        const countryCurrencyMap = {
+            "United States": "USD",
+            "India": "INR",
+            "Canada": "CAD",
+            "United Kingdom": "GBP",
+            "Australia": "AUD",
+            "Pakistan": "PKR",
+            "Kenya": "KES",
+            "Nigeria": "NGN",
+            "South Africa": "ZAR",
+            "Bangladesh": "BDT",
+            "Nepal": "NPR",
+            "Sri Lanka": "LKR",
+            "Philippines": "PHP",
+            "UAE": "AED",
+            "Saudi Arabia": "SAR",
+            "Germany": "EUR",
+            "France": "EUR",
+            "Italy": "EUR"
+        };
+
+        const locationInput = document.getElementById("locationInput");
+        const suggestions = document.getElementById("locationSuggestions");
+        const currencyHint = document.getElementById("currencyHint");
+
+        if (locationInput && suggestions) {
+            locationInput.addEventListener("input", async () => {
+                const query = locationInput.value.trim();
+                if (query.length < 2) return;
+
+                try {
+                    const res = await fetch(`https://api.teleport.org/api/cities/?search=${encodeURIComponent(query)}`);
+                    const data = await res.json();
+
+                    suggestions.innerHTML = "";
+
+                    const results = data?._embedded?.["city:search-results"] || [];
+                    results.slice(0, 5).forEach(item => {
+                        const option = document.createElement("option");
+                        option.value = item.matching_full_name;
+                        suggestions.appendChild(option);
+                    });
+                } catch {
+                    // fail quietly
+                }
+            });
+
+            locationInput.addEventListener("change", () => {
+                let currency = "USD";
+                const val = locationInput.value;
+
+                Object.keys(countryCurrencyMap).forEach(country => {
+                    if (val.includes(country)) {
+                        currency = countryCurrencyMap[country];
+                    }
+                });
+
+                if (currencyHint) {
+                    currencyHint.innerText = "Currency: " + currency;
+                }
+            });
+        }
+
+        // GOAL AMOUNT FIX
+        const goalInput = document.getElementById("goalAmount");
+
+        if (goalInput) {
+            goalInput.addEventListener("focus", () => {
+                if (goalInput.value === "0" || goalInput.value === "0.00") {
+                    goalInput.value = "";
+                }
+            });
+
+            goalInput.addEventListener("input", () => {
+                goalInput.value = goalInput.value.replace(/[^0-9.]/g, "");
+
+                const parts = goalInput.value.split(".");
+                if (parts.length > 2) {
+                    goalInput.value = parts[0] + "." + parts.slice(1).join("");
+                }
+            });
+        }
+
+    });
     </script>
 }
