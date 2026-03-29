@@ -299,6 +299,7 @@
               <div class="col-md-6">
                 <label class="form-label" asp-for="GoalAmount"></label>
                 <input
+                  type="text"
                   class="form-control"
                   asp-for="GoalAmount"
                   id="goalAmount"
@@ -579,22 +580,40 @@
         // GOAL AMOUNT FIX
         const goalInput = document.getElementById("goalAmount");
 
-        if (goalInput) {
-            goalInput.addEventListener("focus", () => {
-                if (goalInput.value === "0" || goalInput.value === "0.00") {
-                    goalInput.value = "";
-                }
-            });
+        if (!goalInput) return;
 
-            goalInput.addEventListener("input", () => {
-                goalInput.value = goalInput.value.replace(/[^0-9.]/g, "");
+        function cleanAmount(value) {
+            value = (value || "").replace(/[^0-9.]/g, "");
 
-                const parts = goalInput.value.split(".");
-                if (parts.length > 2) {
-                    goalInput.value = parts[0] + "." + parts.slice(1).join("");
-                }
-            });
+            const firstDot = value.indexOf(".");
+            if (firstDot !== -1) {
+                value =
+                    value.slice(0, firstDot + 1) +
+                    value.slice(firstDot + 1).replace(/\./g, "");
+            }
+
+            return value;
         }
+
+        goalInput.addEventListener("focus", function () {
+            if (goalInput.value === "0" || goalInput.value === "0.00") {
+                goalInput.value = "";
+            }
+        });
+
+        goalInput.addEventListener("input", function () {
+            goalInput.value = cleanAmount(goalInput.value);
+        });
+
+        goalInput.addEventListener("paste", function (e) {
+            e.preventDefault();
+            const pasted = (e.clipboardData || window.clipboardData).getData("text");
+            goalInput.value = cleanAmount(pasted);
+        });
+
+        goalInput.addEventListener("blur", function () {
+            goalInput.value = cleanAmount(goalInput.value);
+        });
 
     });
     </script>
