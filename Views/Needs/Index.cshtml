@@ -1,24 +1,9 @@
 @model IEnumerable<UpliftBridge.Models.Need>
 @using UpliftBridge.Models
 @using System.Text.RegularExpressions
+@using System.Collections.Generic
 
 @functions{
-    string NeedImage(Need n)
-    {
-        var cat = ((n == null ? "" : n.Category.ToString()) ?? "").Trim().ToLowerInvariant();
-
-        return cat switch
-        {
-            "education" => Url.Content("~/images/needs/emptydesk.jpg"),
-            "sports"    => Url.Content("~/images/needs/emptygym.jpg"),
-            "family"    => Url.Content("~/images/needs/house.jpg"),
-            "medical"   => Url.Content("~/images/needs/emptyclinic.jpg"),
-            "health"    => Url.Content("~/images/needs/emptyclinic.jpg"),
-            "other"     => Url.Content("~/images/needs/kidsinclass.jpg"),
-            _           => Url.Content("~/images/needs/kidsinclass.jpg"),
-        };
-    }
-
     string CleanOneLine(string s, int max = 120)
     {
         s = s ?? "";
@@ -28,63 +13,23 @@
         return s.Substring(0, max).TrimEnd() + "…";
     }
 
-    // Extract first meaningful sentence from Description if ShortSummary is empty
-    string PreviewFromDescription(string desc)
-    {
-        desc = desc ?? "";
-        if (string.IsNullOrWhiteSpace(desc)) return "";
-
-        // Prefer the "Story" block content if your description was built in sections
-        // Your builder prints:
-        // Story
-        // -----
-        // <text>
-        var lines = desc.Split('\n').Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
-
-        // If it contains "Story" header, take the first non-header line after it
-        var storyIdx = lines.FindIndex(x => x.Equals("Story", StringComparison.OrdinalIgnoreCase));
-        if (storyIdx >= 0)
-        {
-            for (int i = storyIdx + 1; i < lines.Count; i++)
-            {
-                var l = lines[i];
-                if (l.StartsWith("-", StringComparison.Ordinal)) continue;
-                if (l.Equals("Long-term dream", StringComparison.OrdinalIgnoreCase)) break;
-                if (l.Length > 6) return CleanOneLine(l, 130);
-            }
-        }
-
-        // Fallback: first non-header non-divider line
-        foreach (var l in lines)
-        {
-            if (l.Length < 4) continue;
-            if (Regex.IsMatch(l, @"^-{3,}$")) continue;
-            if (l.Equals("Timing", StringComparison.OrdinalIgnoreCase)) continue;
-            if (l.Equals("Requested items", StringComparison.OrdinalIgnoreCase)) continue;
-            if (l.Equals("Long-term dream", StringComparison.OrdinalIgnoreCase)) continue;
-            if (l.Equals("What has already been tried", StringComparison.OrdinalIgnoreCase)) continue;
-            return CleanOneLine(l, 130);
-        }
-
-        return "";
-    }
-
-    // Extract Item 1 line from the "Requested items" block, if present
     string TopRequestedItem(string desc)
     {
         desc = desc ?? "";
         if (string.IsNullOrWhiteSpace(desc)) return "";
 
-        var lines = desc.Split('\n').Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
-        var itemsIdx = lines.FindIndex(x => x.Equals("Requested items", StringComparison.OrdinalIgnoreCase));
+        var lines = desc.Split('\n')
+                        .Select(x => x.Trim())
+                        .Where(x => !string.IsNullOrWhiteSpace(x))
+                        .ToList();
 
+        var itemsIdx = lines.FindIndex(x => x.Equals("Requested items", StringComparison.OrdinalIgnoreCase));
         if (itemsIdx < 0) return "";
 
         for (int i = itemsIdx + 1; i < lines.Count; i++)
         {
             var l = lines[i];
             if (l.StartsWith("-", StringComparison.Ordinal)) continue;
-            // Expect "1. laptop — $900"
             if (Regex.IsMatch(l, @"^\d+\.\s+"))
                 return CleanOneLine(l, 90);
         }
@@ -106,10 +51,28 @@
 @{
     ViewData["Title"] = "Needs";
     ViewData["BodyClass"] = "needs-body";
+
+    var photoMap = ViewBag.PhotoMap as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/needs.css" asp-append-version="true" />
+
+    <style>
+        .need-media-empty {
+            min-height: 170px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid rgba(15,23,42,.08);
+            background: linear-gradient(180deg, rgba(15,23,42,.05), rgba(15,23,42,.02));
+            color: #22304a;
+            font-weight: 900;
+            font-size: 1.1rem;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+    </style>
 }
 
 @section Scripts {
@@ -244,20 +207,29 @@
                     var percent = need.PercentFunded;
                     var catLower = (need.Category.ToString() ?? "").ToLowerInvariant();
                     var verLower = (need.VerificationLevel.ToString() ?? "").ToLowerInvariant();
-                    var img = NeedImage(need);
 
-                    // FOLLOWING THE SCREENSHOT: use ShortSummary if present,
-                    // otherwise show a 160-char preview of Description.
-                    var summary = (string.IsNullOrWhiteSpace(need.ShortSummary)
-                        ? (need.Description?.Length > 160 ? need.Description.Substring(0, 160) + "…" : need.Description)
-                        : need.ShortSummary);
+                    var summary = string.IsNullOrWhiteSpace(need.ShortSummary)
+                        ? CleanOneLine(need.Description ?? "", 160)
+                        : CleanOneLine(need.ShortSummary ?? "", 160);
 
                     var topItem = TopRequestedItem(need.Description ?? "");
                     var stillNeeded = need.RemainingAmount;
 
+                    var photo = photoMap.TryGetValue(need.Id, out var path) ? path : "";
+
                     <div class="col-md-6 col-xl-4" data-need-card data-category="@catLower" data-verification="@verLower">
                         <article class="need-card">
-                            <div class="need-media" style="background-image:url('@img');"></div>
+
+                            @if (!string.IsNullOrWhiteSpace(photo))
+                            {
+                                <div class="need-media" style="background-image:url('@photo');"></div>
+                            }
+                            else
+                            {
+                                <div class="need-media-empty">
+                                    @need.Category
+                                </div>
+                            }
 
                             <div class="need-body">
                                 <div class="d-flex flex-wrap gap-2 mb-2">

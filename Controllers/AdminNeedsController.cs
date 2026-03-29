@@ -12,7 +12,6 @@ namespace UpliftBridge.Controllers
     {
         private readonly AppDbContext _context;
 
-        // TODO: move to config later
         private const string ADMIN_KEY = "Mani0751";
 
         public AdminNeedsController(AppDbContext context)
@@ -22,14 +21,12 @@ namespace UpliftBridge.Controllers
 
         private bool IsAdmin(string? key)
         {
-            // allow setting session via query key once
             if (!string.IsNullOrWhiteSpace(key) && key == ADMIN_KEY)
             {
                 HttpContext.Session.SetString("kg_admin", "1");
                 return true;
             }
 
-            // otherwise require session
             return HttpContext.Session.GetString("kg_admin") == "1";
         }
 
@@ -43,14 +40,16 @@ namespace UpliftBridge.Controllers
                 .OrderByDescending(n => n.CreatedAt)
                 .ToList();
 
+            ViewBag.AdminKey = key ?? "";
             return View(needs);
         }
 
-        // OPTIONAL: keep "See" URL if your button uses asp-action="See"
         [HttpGet("See/{id:int}")]
-        public IActionResult See(int id, string? key) => Details(id, key);
+        public IActionResult See(int id, string? key)
+        {
+            return Details(id, key);
+        }
 
-        // Admin preview for pending + published
         [HttpGet("Details/{id:int}")]
         public IActionResult Details(int id, string? key)
         {
@@ -98,7 +97,6 @@ namespace UpliftBridge.Controllers
 
             _context.SaveChanges();
 
-            // ✅ stay on preview page if provided
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
 
@@ -111,12 +109,8 @@ namespace UpliftBridge.Controllers
         {
             if (!IsAdmin(key)) return Unauthorized("Admin key required.");
 
-           
-                if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 10)
+            if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 10)
                 return BadRequest("Please enter a clear rejection reason (at least 10 characters).");
-                if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 12)
-                return BadRequest("Write a clear rejection reason (at least 12 characters).");
-
 
             var need = _context.Needs.FirstOrDefault(n => n.Id == id);
             if (need == null) return NotFound();
@@ -128,7 +122,6 @@ namespace UpliftBridge.Controllers
 
             _context.SaveChanges();
 
-            // ✅ stay on preview page if provided
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
 

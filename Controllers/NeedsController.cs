@@ -30,9 +30,24 @@ namespace UpliftBridge.Controllers
         {
             var needs = _context.Needs
                 .AsNoTracking()
-                .Where(n => n.IsPublished)
+                .Where(n => n.IsPublished == true)
                 .OrderByDescending(n => n.CreatedAt)
                 .ToList();
+
+            var needIds = needs.Select(n => n.Id).ToList();
+
+            var photoMap = _context.NeedPhotos
+                .AsNoTracking()
+                .Where(p => needIds.Contains(p.NeedId) && !string.IsNullOrWhiteSpace(p.Path))
+                .OrderByDescending(p => p.CreatedAtUtc)
+                .ToList()
+                .GroupBy(p => p.NeedId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => x.Path).FirstOrDefault() ?? ""
+                );
+
+            ViewBag.PhotoMap = photoMap;
 
             return View(needs);
         }
@@ -256,7 +271,7 @@ namespace UpliftBridge.Controllers
             var options = new SessionCreateOptions
             {
                 Mode = "payment",
-                PaymentMethodTypes = new List<string> { "card" }, // Apple Pay appears automatically when available
+                PaymentMethodTypes = new List<string> { "card" },
                 LineItems = new List<SessionLineItemOptions>
                 {
                     new SessionLineItemOptions
@@ -309,11 +324,9 @@ namespace UpliftBridge.Controllers
             var sessionService = new SessionService();
             var session = sessionService.Get(session_id);
 
-            // Must be paid
             if (!string.Equals(session.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase))
                 return RedirectToAction("Fund", new { id = needId });
 
-            // Metadata guard
             if (session.Metadata == null ||
                 !session.Metadata.TryGetValue("needId", out var metaNeedId) ||
                 !int.TryParse(metaNeedId, out var parsedNeedId) ||
@@ -325,7 +338,6 @@ namespace UpliftBridge.Controllers
             var need = _context.Needs.FirstOrDefault(n => n.Id == needId && n.IsPublished);
             if (need == null) return NotFound();
 
-            // Amounts from metadata (server computed when creating session)
             decimal giftAmount = 0m;
             decimal platformSupport = 0m;
 
@@ -337,11 +349,9 @@ namespace UpliftBridge.Controllers
 
             var stripePaid = ((session.AmountTotal ?? 0) / 100m);
 
-            // Stripe truth must match platformSupport
             if (Math.Abs(stripePaid - platformSupport) > 0.02m)
                 return RedirectToAction("Fund", new { id = needId });
 
-            // Idempotent: already processed this session
             var existing = _context.GiftOrders.FirstOrDefault(o => o.StripeSessionId == session_id);
             GiftOrder order;
 
@@ -376,8 +386,6 @@ namespace UpliftBridge.Controllers
 
                 _context.GiftOrders.Add(order);
 
-                // OPTION A CHOICE: Raise the goal immediately as "pledged intent"
-                // ONLY acceptable if your UI says it clearly.
                 need.AmountRaised += giftAmount;
                 _context.Needs.Update(need);
 
@@ -418,7 +426,7 @@ namespace UpliftBridge.Controllers
             if (files == null || files.Count == 0) return;
 
             const int MAX_FILES = 6;
-            const long MAX_BYTES = 5 * 1024 * 1024; // 5MB
+            const long MAX_BYTES = 5 * 1024 * 1024;
 
             var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             { ".jpg", ".jpeg", ".png", ".webp" };

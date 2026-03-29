@@ -3,8 +3,9 @@
 @{
     ViewData["Title"] = "Admin — Need Preview";
     var key = (ViewBag.AdminKey as string) ?? "";
-    var updates = ViewBag.Updates as System.Collections.IEnumerable;
-    var photos = ViewBag.Photos as System.Collections.Generic.List<string> ?? new System.Collections.Generic.List<string>();
+    var updates = (ViewBag.Updates as System.Collections.IEnumerable);
+    var photos = (ViewBag.Photos as System.Collections.Generic.IEnumerable<string>)?.ToList()
+                 ?? new System.Collections.Generic.List<string>();
 }
 
 <div class="kg-wrap kg-shell">
@@ -39,14 +40,17 @@
 
       <div class="d-flex gap-2 flex-wrap">
         <a class="kg-btn kg-btn-ghost"
-           asp-controller="AdminNeeds" asp-action="Index"
+           asp-controller="AdminNeeds"
+           asp-action="Index"
            asp-route-key="@key">Back</a>
 
         @if (!Model.IsPublished)
         {
-          <form asp-controller="AdminNeeds" asp-action="Approve"
+          <form asp-controller="AdminNeeds"
+                asp-action="Approve"
                 asp-route-key="@key"
-                method="post" class="d-inline">
+                method="post"
+                class="d-inline">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" value="@Model.Id" />
             <button type="submit"
@@ -80,7 +84,7 @@
           </div>
         </div>
 
-        @if (photos != null && photos.Count > 0)
+        @if (photos.Any())
         {
           <div class="kg-card-light p-3 mt-3">
             <div class="text-muted small mb-2">Photos</div>
@@ -105,7 +109,8 @@
 
           @if (!Model.IsPublished)
           {
-            <form asp-controller="AdminNeeds" asp-action="Reject"
+            <form asp-controller="AdminNeeds"
+                  asp-action="Reject"
                   asp-route-key="@key"
                   method="post">
               @Html.AntiForgeryToken()
@@ -126,7 +131,8 @@
             <div class="text-muted">This need is already published.</div>
 
             <a class="kg-btn kg-btn-ghost mt-2"
-               asp-controller="Needs" asp-action="Details"
+               asp-controller="Needs"
+               asp-action="Details"
                asp-route-id="@Model.Id">
               Open Public Page
             </a>
