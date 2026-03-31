@@ -177,6 +177,17 @@
     color: rgba(15,23,42,.55);
     font-weight: 650;
   }
+  .kg-currency-chip{
+    display: inline-flex;
+    align-items: center;
+    padding: .2rem .65rem;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 900;
+    background: rgba(15,23,42,0.05);
+    border: 1px solid rgba(15,23,42,0.08);
+    color: rgba(15,23,42,.78);
+  }
   .d-none{
     display: none !important;
   }
@@ -344,17 +355,21 @@
 
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label" asp-for="GoalAmount"></label>
+                <label class="form-label" for="goalAmount">Goal amount</label>
                 <input
                   type="text"
                   class="form-control"
-                  asp-for="GoalAmount"
                   id="goalAmount"
+                  name="GoalAmount"
+                  value="@(Model != null && Model.GoalAmount > 0 ? Model.GoalAmount.ToString("0.##") : "")"
                   placeholder="Enter amount"
                   inputmode="decimal"
                   autocomplete="off" />
                 <span class="text-danger" asp-validation-for="GoalAmount"></span>
-                <div class="form-text" id="currencyHint">Currency: USD</div>
+                <div class="form-text d-flex align-items-center justify-content-between gap-2">
+                  <span>Enter only numbers. Example: 250 or 250.50</span>
+                  <span class="kg-currency-chip" id="currencyHint">USD</span>
+                </div>
               </div>
 
               <div class="col-md-6">
@@ -546,23 +561,22 @@
     <script>
     document.addEventListener("DOMContentLoaded", function () {
 
-        // DIRECT PAY TOGGLE
-        const toggle = document.getElementById('directPayToggle');
-        const payLinkWrap = document.getElementById('payLinkWrap');
-        const payLinkInput = document.getElementById('institutionPaymentLinkInput');
+        const directPayToggle = document.getElementById("directPayToggle");
+        const payLinkWrap = document.getElementById("payLinkWrap");
+        const institutionPaymentLinkInput = document.getElementById("institutionPaymentLinkInput");
 
-        if (toggle && payLinkWrap && payLinkInput) {
+        if (directPayToggle && payLinkWrap && institutionPaymentLinkInput) {
             function syncPayLink() {
-                const on = toggle.checked;
-                payLinkWrap.style.display = on ? '' : 'none';
-                payLinkInput.disabled = !on;
-                if (!on) payLinkInput.value = '';
+                const enabled = directPayToggle.checked;
+                payLinkWrap.style.display = enabled ? "" : "none";
+                institutionPaymentLinkInput.disabled = !enabled;
+                if (!enabled) institutionPaymentLinkInput.value = "";
             }
-            toggle.addEventListener('change', syncPayLink);
+
+            directPayToggle.addEventListener("change", syncPayLink);
             syncPayLink();
         }
 
-        // CLEAN OPTIONAL FIELDS
         const trash = new Set(["na", "n/a", "none", "-", "--", "null", "0"]);
         document.querySelectorAll(".kg-optional-item").forEach(el => {
             el.addEventListener("blur", () => {
@@ -571,7 +585,6 @@
             });
         });
 
-        // LOCATION DROPDOWN + CURRENCY HINT
         const countryCurrencyMap = {
             "United States": "USD",
             "India": "INR",
@@ -609,15 +622,14 @@
                 }
             });
             if (currencyHint) {
-                currencyHint.innerText = "Currency: " + currency;
+                currencyHint.textContent = currency;
             }
         }
 
         function hideLocationDropdown() {
-            if (locationDropdown) {
-                locationDropdown.classList.add("d-none");
-                locationDropdown.innerHTML = "";
-            }
+            if (!locationDropdown) return;
+            locationDropdown.classList.add("d-none");
+            locationDropdown.innerHTML = "";
             currentOptions = [];
             activeIndex = -1;
         }
@@ -714,21 +726,18 @@
                     e.preventDefault();
                     activeIndex = Math.min(activeIndex + 1, currentOptions.length - 1);
                     updateActiveOption();
-                }
-                else if (e.key === "ArrowUp") {
+                } else if (e.key === "ArrowUp") {
                     e.preventDefault();
                     activeIndex = Math.max(activeIndex - 1, 0);
                     updateActiveOption();
-                }
-                else if (e.key === "Enter") {
+                } else if (e.key === "Enter") {
                     if (activeIndex >= 0 && currentOptions[activeIndex]) {
                         e.preventDefault();
                         locationInput.value = currentOptions[activeIndex];
                         setCurrencyHint(locationInput.value);
                         hideLocationDropdown();
                     }
-                }
-                else if (e.key === "Escape") {
+                } else if (e.key === "Escape") {
                     hideLocationDropdown();
                 }
             });
@@ -748,7 +757,6 @@
             });
         }
 
-        // GOAL AMOUNT FIX
         const goalInput = document.getElementById("goalAmount");
 
         if (goalInput) {
@@ -760,6 +768,10 @@
                     value =
                         value.slice(0, firstDot + 1) +
                         value.slice(firstDot + 1).replace(/\./g, "");
+                }
+
+                if (value.startsWith(".")) {
+                    value = "0" + value;
                 }
 
                 return value;
@@ -783,6 +795,25 @@
 
             goalInput.addEventListener("blur", function () {
                 goalInput.value = cleanAmount(goalInput.value);
+            });
+
+            goalInput.addEventListener("keydown", function (e) {
+                const allowed = [
+                    "Backspace", "Delete", "Tab", "Escape", "Enter",
+                    "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+                    "Home", "End"
+                ];
+
+                if (
+                    allowed.includes(e.key) ||
+                    (e.ctrlKey || e.metaKey)
+                ) {
+                    return;
+                }
+
+                if (!/[0-9.]/.test(e.key)) {
+                    e.preventDefault();
+                }
             });
         }
 
