@@ -11,7 +11,7 @@ using UpliftBridge.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ✅ Render: bind to the provided PORT (required for Render web services)
+// Render port binding
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
@@ -31,11 +31,7 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromHours(8);
 });
 
-// -------------------------
-// DATA PROTECTION (PERSIST KEYS ON RENDER DISK IF PRESENT)
-// -------------------------
-// Without persisting keys, antiforgery/session cookies can break after redeploy/restart
-// (e.g., "The antiforgery token could not be decrypted").
+// Data protection keys on Render disk if available
 var dpKeysPath = "/var/data/dpkeys";
 if (Directory.Exists("/var/data"))
 {
@@ -49,7 +45,7 @@ if (Directory.Exists("/var/data"))
 // DATABASE CONFIG
 // -------------------------
 var env = builder.Environment;
-var connString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connString = builder.Configuration.GetConnectionString("DefaultConnection")?.Trim();
 
 if (env.IsProduction())
 {
@@ -61,8 +57,13 @@ if (env.IsProduction())
 }
 else
 {
-    // Dev: prefer Postgres if connection string exists, otherwise SQLite
-    if (!string.IsNullOrWhiteSpace(connString))
+    // Development:
+    // - use SQLite if connection string is SQLite
+    // - use Postgres only if connection string clearly looks like Postgres
+    // - otherwise fall back to SQLite
+
+    if (!string.IsNullOrWhiteSpace(connString) &&
+        connString.StartsWith("Host=", StringComparison.OrdinalIgnoreCase))
     {
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connString));
@@ -76,7 +77,7 @@ else
 
 var app = builder.Build();
 
-// If behind a proxy (Render), trust forwarded headers
+// Trust Render proxy headers
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
@@ -91,10 +92,8 @@ if (!string.IsNullOrWhiteSpace(stripeKey))
     StripeConfiguration.ApiKey = stripeKey;
 
 // -------------------------
-// MIGRATIONS + SEED (CONTROLLED)
+// MIGRATIONS + SEED
 // -------------------------
-// Default: NO migrations on boot in Production.
-// To run migrations on Render: set env var RUN_MIGRATIONS=true for ONE deploy, then remove it.
 var runMigrations = string.Equals(
     Environment.GetEnvironmentVariable("RUN_MIGRATIONS"),
     "true",

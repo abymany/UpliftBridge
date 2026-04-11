@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UpliftBridge.Data;
+using UpliftBridge.Models;
 
 namespace UpliftBridge.Controllers
 {
@@ -13,6 +14,7 @@ namespace UpliftBridge.Controllers
         private readonly AppDbContext _context;
 
         private const string ADMIN_KEY = "Mani0751";
+        private const string ADMIN_NAME = "Admin";
 
         public AdminNeedsController(AppDbContext context)
         {
@@ -28,6 +30,21 @@ namespace UpliftBridge.Controllers
             }
 
             return HttpContext.Session.GetString("kg_admin") == "1";
+        }
+
+        private IActionResult RedirectBackOrDetails(int id, string? key, string? returnUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Details), new { id, key });
+        }
+
+        private void StampReview(Need need, string reviewStatus)
+        {
+            need.ReviewedBy = ADMIN_NAME;
+            need.ReviewedAtUtc = DateTime.UtcNow;
+            need.InternalReviewStatus = string.IsNullOrWhiteSpace(reviewStatus) ? "Pending" : reviewStatus.Trim();
         }
 
         [HttpGet("")]
@@ -78,7 +95,7 @@ namespace UpliftBridge.Controllers
             ViewBag.Updates = updates;
             ViewBag.Photos = photos;
 
-            return View(need);
+            return View("See", need);
         }
 
         [HttpPost("Approve")]
@@ -92,15 +109,19 @@ namespace UpliftBridge.Controllers
 
             need.IsPublished = true;
             need.RejectionReason = "";
-            need.ReviewedBy = "Admin";
-            need.ReviewedAtUtc = DateTime.UtcNow;
+            need.IsSuspicious = false;
+
+            StampReview(need, "Approved");
+
+            if (need.VerificationLevel == VerificationLevel.BasicContactVerified)
+            {
+                need.VerifiedBy = ADMIN_NAME;
+                need.VerifiedAtUtc = DateTime.UtcNow;
+            }
 
             _context.SaveChanges();
 
-            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-                return Redirect(returnUrl);
-
-            return RedirectToAction(nameof(Index), new { key });
+            return RedirectBackOrDetails(id, key, returnUrl);
         }
 
         [HttpPost("Reject")]
@@ -117,15 +138,179 @@ namespace UpliftBridge.Controllers
 
             need.IsPublished = false;
             need.RejectionReason = reason.Trim();
-            need.ReviewedBy = "Admin";
-            need.ReviewedAtUtc = DateTime.UtcNow;
+
+            StampReview(need, "Rejected");
 
             _context.SaveChanges();
 
-            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-                return Redirect(returnUrl);
+            return RedirectBackOrDetails(id, key, returnUrl);
+        }
 
-            return RedirectToAction(nameof(Index), new { key });
+        [HttpPost("MarkNeedsInfo")]
+        [ValidateAntiForgeryToken]
+        public IActionResult MarkNeedsInfo(int id, string notes, string? key, string? returnUrl)
+        {
+            if (!IsAdmin(key)) return Unauthorized("Admin key required.");
+
+            var need = _context.Needs.FirstOrDefault(n => n.Id == id);
+            if (need == null) return NotFound();
+
+            need.IsPublished = false;
+            need.RejectionReason = "";
+            need.InternalReviewNotes = (notes ?? "").Trim();
+
+            StampReview(need, "Needs More Info");
+
+            _context.SaveChanges();
+
+            return RedirectBackOrDetails(id, key, returnUrl);
+        }
+
+        [HttpPost("FlagSuspicious")]
+        [ValidateAntiForgeryToken]
+        public IActionResult FlagSuspicious(int id, string notes, string? key, string? returnUrl)
+        {
+            if (!IsAdmin(key)) return Unauthorized("Admin key required.");
+
+            var need = _context.Needs.FirstOrDefault(n => n.Id == id);
+            if (need == null) return NotFound();
+
+            need.IsPublished = false;
+            need.IsSuspicious = true;
+            need.RiskNotes = (notes ?? "").Trim();
+
+            StampReview(need, "Flagged");
+
+            _context.SaveChanges();
+
+            return RedirectBackOrDetails(id, key, returnUrl);
+        }
+
+        [HttpPost("SetEmailVerified")]
+        [ValidateAntiForgeryToken]
+        public IActionResult SetEmailVerified(int id, bool verified, string? key, string? returnUrl)
+        {
+            if (!IsAdmin(key)) return Unauthorized("Admin key required.");
+
+            var need = _context.Needs.FirstOrDefault(n => n.Id == id);
+            if (need == null) return NotFound();
+
+            need.IsEmailVerified = verified;
+            need.EmailVerifiedAtUtc = verified ? DateTime.UtcNow : null;
+            need.VerifiedBy = ADMIN_NAME;
+            need.VerifiedAtUtc = DateTime.UtcNow;
+
+            if (verified && need.VerificationLevel == VerificationLevel.BasicContactVerified)
+            {
+                if (string.IsNullOrWhiteSpace(need.VerificationNote))
+                    need.VerificationNote = "Email reviewed by admin.";
+            }
+
+            StampReview(need, verified ? "Email Verified" : "Email Not Verified");
+
+            _context.SaveChanges();
+
+            return RedirectBackOrDetails(id, key, returnUrl);
+        }
+
+        [HttpPost("SetPhoneVerified")]
+        [ValidateAntiForgeryToken]
+        public IActionResult SetPhoneVerified(int id, bool verified, string? key, string? returnUrl)
+        {
+            if (!IsAdmin(key)) return Unauthorized("Admin key required.");
+
+            var need = _context.Needs.FirstOrDefault(n => n.Id == id);
+            if (need == null) return NotFound();
+
+            need.IsPhoneVerified = verified;
+            need.VerifiedBy = ADMIN_NAME;
+            need.VerifiedAtUtc = DateTime.UtcNow;
+
+            StampReview(need, verified ? "Phone Verified" : "Phone Not Verified");
+
+            _context.SaveChanges();
+
+            return RedirectBackOrDetails(id, key, returnUrl);
+        }
+
+        [HttpPost("SaveInternalNotes")]
+        [ValidateAntiForgeryToken]
+        public IActionResult SaveInternalNotes(int id, string notes, string? key, string? returnUrl)
+        {
+            if (!IsAdmin(key)) return Unauthorized("Admin key required.");
+
+            var need = _context.Needs.FirstOrDefault(n => n.Id == id);
+            if (need == null) return NotFound();
+
+            need.InternalReviewNotes = (notes ?? "").Trim();
+
+            StampReview(need, string.IsNullOrWhiteSpace(need.InternalReviewStatus) ? "Pending" : need.InternalReviewStatus);
+
+            _context.SaveChanges();
+
+            return RedirectBackOrDetails(id, key, returnUrl);
+        }
+
+        [HttpPost("SetVerificationLevel")]
+        [ValidateAntiForgeryToken]
+        public IActionResult SetVerificationLevel(int id, VerificationLevel verificationLevel, string? note, string? key, string? returnUrl)
+        {
+            if (!IsAdmin(key)) return Unauthorized("Admin key required.");
+
+            var need = _context.Needs.FirstOrDefault(n => n.Id == id);
+            if (need == null) return NotFound();
+
+            need.VerificationLevel = verificationLevel;
+
+            if (!string.IsNullOrWhiteSpace(note))
+                need.VerificationNote = note.Trim();
+
+            need.VerifiedBy = ADMIN_NAME;
+            need.VerifiedAtUtc = DateTime.UtcNow;
+
+            StampReview(need, "Verification Updated");
+
+            _context.SaveChanges();
+
+            return RedirectBackOrDetails(id, key, returnUrl);
+        }
+
+        [HttpPost("UpdateVerification")]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateVerification(
+            int id,
+            bool emailVerified,
+            bool phoneVerified,
+            string status,
+            string riskNotes,
+            string? internalNotes,
+            string? key,
+            string? returnUrl)
+        {
+            if (!IsAdmin(key)) return Unauthorized("Admin key required.");
+
+            var need = _context.Needs.FirstOrDefault(n => n.Id == id);
+            if (need == null) return NotFound();
+
+            need.IsEmailVerified = emailVerified;
+            need.IsPhoneVerified = phoneVerified;
+            need.InternalReviewStatus = string.IsNullOrWhiteSpace(status) ? "Pending" : status.Trim();
+            need.RiskNotes = (riskNotes ?? "").Trim();
+            need.InternalReviewNotes = (internalNotes ?? "").Trim();
+            need.IsSuspicious =
+                need.InternalReviewStatus.Equals("Flagged", StringComparison.OrdinalIgnoreCase) ||
+                !string.IsNullOrWhiteSpace(need.RiskNotes);
+
+            need.EmailVerifiedAtUtc = emailVerified ? (need.EmailVerifiedAtUtc ?? DateTime.UtcNow) : null;
+
+            need.VerifiedBy = ADMIN_NAME;
+            need.VerifiedAtUtc = DateTime.UtcNow;
+
+            StampReview(need, need.InternalReviewStatus);
+
+            _context.SaveChanges();
+
+            return RedirectBackOrDetails(id, key, returnUrl);
         }
     }
 }

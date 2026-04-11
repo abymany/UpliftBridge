@@ -30,7 +30,7 @@ namespace UpliftBridge.Controllers
         {
             var needs = _context.Needs
                 .AsNoTracking()
-                .Where(n => n.IsPublished == true)
+                .Where(n => n.IsPublished)
                 .OrderByDescending(n => n.CreatedAt)
                 .ToList();
 
@@ -98,7 +98,6 @@ namespace UpliftBridge.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(NeedCreateViewModel vm)
         {
-            // Institution link is ONLY required when PreferDirectToInstitution is checked.
             if (vm.PreferDirectToInstitution && string.IsNullOrWhiteSpace(vm.InstitutionPaymentLink))
             {
                 ModelState.AddModelError(
@@ -121,6 +120,43 @@ namespace UpliftBridge.Controllers
 
             var desc = BuildNeedDescription(vm);
             var shortSummary = BuildShortSummary(vm, desc);
+            var submissionToken = Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
+
+            var riskNotes = new List<string>();
+            var loweredDescription = (desc ?? string.Empty).ToLowerInvariant();
+            var loweredPayTo = (vm.PayTo ?? string.Empty).ToLowerInvariant();
+            var loweredInstitutionLink = (vm.InstitutionPaymentLink ?? string.Empty).ToLowerInvariant();
+
+            if (vm.GoalAmount > 5000m)
+                riskNotes.Add("High amount requires manual review.");
+
+            if (!string.IsNullOrWhiteSpace(vm.PayTo) &&
+                (loweredPayTo.Contains("cashapp") ||
+                 loweredPayTo.Contains("venmo") ||
+                 loweredPayTo.Contains("paypal.me") ||
+                 loweredPayTo.Contains("$")))
+            {
+                riskNotes.Add("Contains personal payment handle.");
+            }
+
+            if (loweredDescription.Contains("cashapp") ||
+                loweredDescription.Contains("venmo") ||
+                loweredDescription.Contains("paypal.me"))
+            {
+                riskNotes.Add("Story contains personal payment handle.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(vm.InstitutionPaymentLink) &&
+                !(loweredInstitutionLink.Contains(".edu") ||
+                  loweredInstitutionLink.Contains(".org") ||
+                  loweredInstitutionLink.Contains("school") ||
+                  loweredInstitutionLink.Contains("college") ||
+                  loweredInstitutionLink.Contains("university") ||
+                  loweredInstitutionLink.Contains("hospital") ||
+                  loweredInstitutionLink.Contains("clinic")))
+            {
+                riskNotes.Add("Institution payment link does not look official.");
+            }
 
             var need = new Need
             {
@@ -136,11 +172,20 @@ namespace UpliftBridge.Controllers
 
                 RequesterName = (vm.ForWhom ?? "").Trim(),
                 RequesterEmail = (vm.ContactEmail ?? "").Trim(),
+                PhoneNumber = (vm.ContactPhone ?? "").Trim(),
+
+                IsEmailVerified = false,
+                IsPhoneVerified = false,
+                EmailOtpCode = string.Empty,
+                EmailOtpExpiresAtUtc = null,
+                EmailVerifiedAtUtc = null,
 
                 PayTo = (vm.PayTo ?? "").Trim(),
 
                 VerificationLevel = vm.VerificationLevel,
                 VerificationNote = (vm.VerificationNote ?? "").Trim(),
+                VerifiedBy = string.Empty,
+                VerifiedAtUtc = null,
 
                 InstitutionName = (vm.InstitutionName ?? "").Trim(),
                 InstitutionType = (vm.InstitutionType ?? "").Trim(),
@@ -148,8 +193,18 @@ namespace UpliftBridge.Controllers
                 InstitutionPaymentLink = (vm.InstitutionPaymentLink ?? "").Trim(),
                 PreferDirectToInstitution = vm.PreferDirectToInstitution,
 
-                IsPublished = false, // pending review
-                CreatedAt = DateTime.UtcNow
+                IsSuspicious = riskNotes.Count > 0,
+                RiskNotes = string.Join(" ", riskNotes),
+                InternalReviewStatus = riskNotes.Count > 0 ? "Flagged" : "Pending",
+                InternalReviewNotes = string.Empty,
+
+                IsPublished = false,
+                RejectionReason = string.Empty,
+                ReviewedBy = string.Empty,
+                ReviewedAtUtc = null,
+
+                CreatedAt = DateTime.UtcNow,
+                SubmissionToken = submissionToken
             };
 
             _context.Needs.Add(need);
@@ -157,7 +212,6 @@ namespace UpliftBridge.Controllers
 
             SaveNeedPhotos(need.Id, vm);
 
-            // Pending needs must NOT go to Details (Details is published-only)
             return RedirectToAction(nameof(CreateSuccess), new { id = need.Id });
         }
 
@@ -189,7 +243,6 @@ namespace UpliftBridge.Controllers
         // ----------------------------------
         // FUND – GET (shows funding + platform tip)
         // ----------------------------------
-        // GET: /Needs/Fund/5
         [HttpGet]
         public IActionResult Fund(int id)
         {
@@ -216,105 +269,7 @@ namespace UpliftBridge.Controllers
         }
 
         // ----------------------------------
-        // FUND – POST (creates Stripe checkout for platform support ONLY)
-        // ----------------------------------
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Fund(FundNeedViewModel vm)
-        {
-            // Re-load need from DB (never trust posted RemainingAmount etc.)
-            var need = _context.Needs.FirstOrDefault(n => n.Id == vm.NeedId && n.IsPublished);
-            if (need == null) return NotFound();
-
-            var remaining = Math.Max(0m, need.GoalAmount - need.AmountRaised);
-
-            // Rebuild VM snapshot values (so view stays correct on validation errors)
-            vm.Title = need.Title;
-            vm.GoalAmount = need.GoalAmount;
-            vm.AmountRaised = need.AmountRaised;
-            vm.RemainingAmount = remaining;
-            vm.IsFullyFunded = remaining <= 0m;
-
-            if (vm.IsFullyFunded)
-            {
-                ModelState.AddModelError("", "This need is already fully funded.");
-                return View(vm);
-            }
-
-            // Enforce anonymous behavior server-side
-            if (vm.IsAnonymous)
-            {
-                vm.DonorName = "";
-                vm.DonorEmail = "";
-            }
-
-            if (!ModelState.IsValid)
-                return View(vm);
-
-            // Compute platform support server-side (ignore client TipAmount)
-            var cappedGift = Math.Min(Math.Max(0m, vm.ItemCost), remaining);
-            var pct = Math.Max(0, Math.Min(20, vm.TipPercent));
-            var platformSupport = Math.Round(cappedGift * (pct / 100m), 2);
-
-            // Stripe min charge safety (USD)
-            if (platformSupport > 0m && platformSupport < 0.50m) platformSupport = 0.50m;
-
-            if (platformSupport <= 0m)
-            {
-                ModelState.AddModelError("", "Platform support must be greater than $0.00.");
-                return View(vm);
-            }
-
-            var cents = (long)Math.Round(platformSupport * 100m, 0);
-
-            var domain = $"{Request.Scheme}://{Request.Host}";
-
-            var options = new SessionCreateOptions
-            {
-                Mode = "payment",
-                PaymentMethodTypes = new List<string> { "card" },
-                LineItems = new List<SessionLineItemOptions>
-                {
-                    new SessionLineItemOptions
-                    {
-                        Quantity = 1,
-                        PriceData = new SessionLineItemPriceDataOptions
-                        {
-                            Currency = "usd",
-                            UnitAmount = cents,
-                            ProductData = new SessionLineItemPriceDataProductDataOptions
-                            {
-                                Name = "UpliftBridge platform support",
-                                Description = $"Support fee for: {need.Title}"
-                            }
-                        }
-                    }
-                },
-                SuccessUrl = domain + Url.Action(
-                    "FundSuccess",
-                    "Needs",
-                    new { needId = need.Id, session_id = "{CHECKOUT_SESSION_ID}" }
-                ),
-                CancelUrl = domain + Url.Action("Fund", "Needs", new { id = need.Id }),
-                Metadata = new Dictionary<string, string>
-                {
-                    ["needId"] = need.Id.ToString(),
-                    ["giftAmount"] = cappedGift.ToString("0.00"),
-                    ["platformSupport"] = platformSupport.ToString("0.00"),
-                    ["tipPercent"] = pct.ToString(),
-                    ["isAnonymous"] = vm.IsAnonymous ? "1" : "0",
-                    ["donorEmail"] = vm.IsAnonymous ? "" : (vm.DonorEmail ?? "")
-                }
-            };
-
-            var service = new SessionService();
-            var session = service.Create(options);
-
-            return Redirect(session.Url);
-        }
-
-        // ----------------------------------
-        // FUND SUCCESS – Stripe returns here (Option A)
+        // FUND SUCCESS – Stripe returns here
         // ----------------------------------
         [HttpGet]
         public IActionResult FundSuccess(int needId, string session_id)
@@ -369,19 +324,14 @@ namespace UpliftBridge.Controllers
                 {
                     NeedId = need.Id,
                     NeedTitle = need.Title,
-
                     DonorName = null,
                     DonorEmail = isAnon ? null : (string.IsNullOrWhiteSpace(donorEmail) ? null : donorEmail),
-
                     PledgedGiftAmount = giftAmount,
                     PlatformSupportPaid = platformSupport,
-
                     PaymentStatus = PaymentStatus.Paid,
-
                     StripeSessionId = session_id,
                     StripePaymentIntentId = session.PaymentIntentId ?? "",
                     CreatedAt = DateTime.UtcNow,
-
                     OffsiteStatus = OffsiteGiftStatus.Unconfirmed
                 };
 
@@ -420,7 +370,6 @@ namespace UpliftBridge.Controllers
         // ----------------------------------
         // Helpers
         // ----------------------------------
-
         private void SaveNeedPhotos(int needId, NeedCreateViewModel vm)
         {
             var files = vm.Photos;

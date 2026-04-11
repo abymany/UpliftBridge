@@ -54,6 +54,21 @@ namespace UpliftBridge.Models
         [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
         public string RequesterEmail { get; set; } = string.Empty;
 
+        [MaxLength(40)]
+        [Phone]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        public bool IsEmailVerified { get; set; } = false;
+
+        public bool IsPhoneVerified { get; set; } = false;
+
+        [MaxLength(12)]
+        public string EmailOtpCode { get; set; } = string.Empty;
+
+        public DateTime? EmailOtpExpiresAtUtc { get; set; }
+
+        public DateTime? EmailVerifiedAtUtc { get; set; }
+
         // payment routing (optional)
         [MaxLength(180)]
         public string PayTo { get; set; } = string.Empty;
@@ -78,9 +93,24 @@ namespace UpliftBridge.Models
         [MaxLength(600)]
         public string VerificationNote { get; set; } = string.Empty;
 
-        // -----------------------------
-        // Moderation (SINGLE SOURCE OF TRUTH)
-        // -----------------------------
+        [MaxLength(120)]
+        public string VerifiedBy { get; set; } = string.Empty;
+
+        public DateTime? VerifiedAtUtc { get; set; }
+
+        // moderation / risk
+        public bool IsSuspicious { get; set; } = false;
+
+        [MaxLength(800)]
+        public string RiskNotes { get; set; } = string.Empty;
+
+        [MaxLength(120)]
+        public string InternalReviewStatus { get; set; } = "Pending";
+
+        [MaxLength(1200)]
+        public string InternalReviewNotes { get; set; } = string.Empty;
+
+        // publication
         public bool IsPublished { get; set; } = false;
 
         [MaxLength(400)]
@@ -93,14 +123,15 @@ namespace UpliftBridge.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [MaxLength(200)]
         public string SubmissionToken { get; set; } = "";
 
-        // computed label for admin table
         [NotMapped]
         public string StatusLabel =>
             IsPublished ? "Approved"
             : !string.IsNullOrWhiteSpace(RejectionReason) ? "Rejected"
-            : "Pending";
+            : string.IsNullOrWhiteSpace(InternalReviewStatus) ? "Pending"
+            : InternalReviewStatus;
 
         [NotMapped]
         public decimal RemainingAmount

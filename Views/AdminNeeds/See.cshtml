@@ -3,18 +3,16 @@
 @using System.Text.RegularExpressions
 
 @{
-    ViewData["Title"] = (Model.Title ?? "Need") + " — Admin Preview";
+    ViewData["Title"] = (Model.Title ?? "Need") + " — Admin Review";
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["BodyClass"] = "needs-details-page";
 
     var updates = ViewBag.Updates as List<NeedUpdate> ?? new List<NeedUpdate>();
-    var photos  = ViewBag.Photos as List<string> ?? new List<string>();
-
+    var photos = ViewBag.Photos as List<string> ?? new List<string>();
     var adminKey = (ViewBag.AdminKey as string) ?? "";
 
     string Safe(string? s) => (s ?? "").Trim();
 
-    // Return to THIS page after Approve/Reject
     var returnUrl = (Context?.Request?.Path.ToString() ?? "") + (Context?.Request?.QueryString.ToString() ?? "");
 
     var raw = Safe(Model.Description);
@@ -31,7 +29,7 @@
         if (lines.Count >= 3 && Regex.IsMatch(lines[1], @"^\-+$|^\—+$|^_+$"))
         {
             var title = lines[0].Trim();
-            var body  = string.Join("\n", lines.Skip(2)).Trim();
+            var body = string.Join("\n", lines.Skip(2)).Trim();
             sections.Add((title, body));
         }
         else
@@ -90,190 +88,444 @@
     var remaining = goal > 0 ? Math.Max(0m, goal - raised) : 0m;
     var pct = (goal > 0) ? Math.Min(100, (int)Math.Round((double)(raised / goal * 100m))) : 0;
 
-    var isPending = !Model.IsPublished;
+    var isPending = !Model.IsPublished && string.IsNullOrWhiteSpace(Model.RejectionReason);
     var isRejected = !Model.IsPublished && !string.IsNullOrWhiteSpace(Model.RejectionReason);
+    var isLive = Model.IsPublished;
+
+    var hasInstitution = !string.IsNullOrWhiteSpace(Model.InstitutionName) || !string.IsNullOrWhiteSpace(Model.InstitutionType);
+    var hasOfficialLink = !string.IsNullOrWhiteSpace(Model.InstitutionPaymentLink);
+    var hasPrivateAddress = !string.IsNullOrWhiteSpace(Model.InstitutionFullAddress);
+    var hasEmail = !string.IsNullOrWhiteSpace(Model.RequesterEmail);
+    var hasPhone = !string.IsNullOrWhiteSpace(Model.PhoneNumber);
+    var hasRequesterName = !string.IsNullOrWhiteSpace(Model.RequesterName);
+    var hasVerificationNote = !string.IsNullOrWhiteSpace(Model.VerificationNote);
+    var hasToken = !string.IsNullOrWhiteSpace(Model.SubmissionToken);
+
+    bool looksLikePersonalHandle(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var t = text.ToLowerInvariant();
+        return t.Contains("cashapp") || t.Contains("venmo") || t.Contains("paypal.me") || t.Contains("$");
+    }
+
+    var suspiciousPaymentText =
+        looksLikePersonalHandle(Model.Description) ||
+        looksLikePersonalHandle(Model.PayTo) ||
+        looksLikePersonalHandle(Model.InstitutionPaymentLink);
+
+    var officialLinkLooksOkay =
+        !string.IsNullOrWhiteSpace(Model.InstitutionPaymentLink) &&
+        (Model.InstitutionPaymentLink.Contains(".edu", StringComparison.OrdinalIgnoreCase) ||
+         Model.InstitutionPaymentLink.Contains(".org", StringComparison.OrdinalIgnoreCase) ||
+         Model.InstitutionPaymentLink.Contains("school", StringComparison.OrdinalIgnoreCase) ||
+         Model.InstitutionPaymentLink.Contains("college", StringComparison.OrdinalIgnoreCase) ||
+         Model.InstitutionPaymentLink.Contains("university", StringComparison.OrdinalIgnoreCase) ||
+         Model.InstitutionPaymentLink.Contains("hospital", StringComparison.OrdinalIgnoreCase) ||
+         Model.InstitutionPaymentLink.Contains("clinic", StringComparison.OrdinalIgnoreCase));
+
+    string reviewTone;
+    if (Model.IsSuspicious || suspiciousPaymentText)
+        reviewTone = "High caution";
+    else if (hasInstitution && hasOfficialLink && hasPrivateAddress && hasEmail && hasRequesterName)
+        reviewTone = "Stronger verification package";
+    else
+        reviewTone = "Needs more verification";
 }
 
 @section Styles {
 <style>
-  .kg-hero{
-    border-radius: 28px;
-    background: rgba(15,23,42,.80);
-    border: 1px solid rgba(255,255,255,.10);
-    padding: 2.25rem 2.25rem;
-    box-shadow: 0 22px 70px rgba(0,0,0,.35);
-    color: rgba(255,255,255,.92);
-    position: relative;
-    overflow: hidden;
+  .admin-shell{
+    max-width: 1320px;
+    margin: 0 auto;
   }
-  .kg-hero h1{
+
+  .admin-topbar,
+  .admin-card,
+  .preview-card{
+    border-radius: 26px;
+    border: 1px solid rgba(15,23,42,.08);
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 18px 48px rgba(15,23,42,.08);
+  }
+
+  .admin-topbar{
+    padding: 1.35rem 1.5rem;
+    margin-bottom: 1.25rem;
+    background: linear-gradient(135deg, rgba(255,251,235,.96), rgba(255,255,255,.97));
+    border-color: rgba(245,158,11,.35);
+  }
+
+  .admin-topbar-label{
+    font-size: .78rem;
+    font-weight: 950;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #92400e;
+  }
+
+  .admin-topbar-title{
+    font-size: 1.45rem;
+    font-weight: 950;
+    color: #111827;
+    margin-top: .25rem;
+  }
+
+  .admin-topbar-sub{
+    color: rgba(17,24,39,.72);
+    font-weight: 700;
+    margin-top: .25rem;
+  }
+
+  .admin-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.75rem;
+    align-items:center;
+    margin-top:1rem;
+  }
+
+  .pill-btn{
+    border-radius:999px;
+    font-weight:900;
+    padding:.8rem 1.15rem;
+  }
+
+  .admin-layout{
+    display:grid;
+    grid-template-columns: 1.15fr .85fr;
+    gap: 1.25rem;
+    align-items:start;
+  }
+
+  .admin-card{
+    padding: 1.35rem 1.35rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .preview-card{
+    padding: 1.35rem 1.35rem;
+    margin-top: 1.25rem;
+  }
+
+  .section-kicker{
+    font-size: .76rem;
+    font-weight: 950;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: rgba(15,23,42,.54);
+    margin-bottom: .5rem;
+  }
+
+  .section-title{
+    font-size: 1.05rem;
+    font-weight: 950;
+    color: #0f172a;
+    margin-bottom: 1rem;
+  }
+
+  .admin-grid-2{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .85rem 1rem;
+  }
+
+  .info-box{
+    border-radius: 18px;
+    background: rgba(15,23,42,.035);
+    border: 1px solid rgba(15,23,42,.08);
+    padding: .95rem 1rem;
+  }
+
+  .info-label{
+    font-size: .74rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(15,23,42,.52);
+    margin-bottom: .3rem;
+  }
+
+  .info-value{
+    font-size: .98rem;
+    font-weight: 800;
+    color: #0f172a;
+    word-break: break-word;
+  }
+
+  .muted-value{
+    color: rgba(15,23,42,.56);
+  }
+
+  .status-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.55rem;
+    margin-top:.4rem;
+  }
+
+  .status-badge{
+    border-radius:999px;
+    padding:.42rem .85rem;
+    font-size:.78rem;
+    font-weight:900;
+    letter-spacing:.04em;
+    border:1px solid rgba(15,23,42,.12);
+    background: rgba(15,23,42,.05);
+    color:#0f172a;
+  }
+
+  .status-ok{
+    background: rgba(34,197,94,.12);
+    border-color: rgba(34,197,94,.24);
+  }
+
+  .status-warn{
+    background: rgba(245,158,11,.12);
+    border-color: rgba(245,158,11,.28);
+  }
+
+  .status-danger{
+    background: rgba(239,68,68,.12);
+    border-color: rgba(239,68,68,.28);
+  }
+
+  .status-info{
+    background: rgba(59,130,246,.10);
+    border-color: rgba(59,130,246,.24);
+  }
+
+  .review-note{
+    border-radius: 18px;
+    background: rgba(15,23,42,.035);
+    border: 1px solid rgba(15,23,42,.08);
+    padding: 1rem;
+    font-weight: 700;
+    color: rgba(15,23,42,.78);
+  }
+
+  .admin-form label{
+    font-weight: 850;
+    color: #111827;
+    margin-bottom: .4rem;
+  }
+
+  .admin-form textarea,
+  .admin-form select,
+  .admin-form input[type="text"]{
+    border-radius: 16px;
+  }
+
+  .admin-form textarea{
+    min-height: 110px;
+  }
+
+  .mini-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.7rem;
+    margin-top:1rem;
+  }
+
+  .preview-hero{
+    border-radius: 24px;
+    background: rgba(15,23,42,.78);
+    color: rgba(255,255,255,.94);
+    padding: 1.6rem;
+    margin-bottom: 1rem;
+  }
+
+  .preview-hero h1{
     font-family: "Playfair Display", serif;
     font-weight: 700;
-    font-size: 2.7rem;
-    line-height: 1.1;
-    margin-bottom: .45rem;
+    font-size: 2.35rem;
+    margin: 0 0 .45rem 0;
   }
-  .kg-hero-sub{
-    font-weight: 700;
+
+  .preview-sub{
+    font-weight: 800;
     color: rgba(255,255,255,.78);
   }
-  .kg-badges{ display:flex; flex-wrap:wrap; gap:.5rem; margin-top: 1rem; }
-  .kg-badge{
-    border-radius: 999px;
-    padding: .35rem .85rem;
-    font-size: .78rem;
-    font-weight: 900;
-    letter-spacing: .10em;
-    text-transform: uppercase;
-    border: 1px solid rgba(255,255,255,.16);
-    background: rgba(255,255,255,.08);
-    color: rgba(255,255,255,.88);
-  }
-  .kg-badge-warn{
-    background: rgba(245,158,11,.15);
-    border-color: rgba(245,158,11,.35);
-    color: rgba(255,255,255,.92);
-  }
-  .kg-badge-danger{
-    background: rgba(220,38,38,.18);
-    border-color: rgba(220,38,38,.45);
-    color: rgba(255,255,255,.92);
-  }
 
-  .kg-card{
-    border-radius: 24px;
-    background: rgba(255,255,255,.94);
-    border: 1px solid rgba(15,23,42,.08);
-    box-shadow: 0 18px 50px rgba(15,23,42,.10);
-    padding: 1.75rem 1.75rem;
-    margin-bottom: 1.25rem;
-  }
-
-  .kg-h{
-    font-weight: 950;
-    color: #0b1220;
-    margin-bottom: .75rem;
-  }
-
-  .kg-muted{
-    color: rgba(15,23,42,.66);
-    font-weight: 650;
-  }
-
-  .kg-progress{
-    height: 10px;
-    border-radius: 999px;
-    background: rgba(15,23,42,.10);
-    overflow:hidden;
-  }
-  .kg-progress > div{
-    height:100%;
-    width: 0%;
-    background: linear-gradient(90deg, #e6d3a2, #c8a96a);
-  }
-
-  .kg-btn{
-    border-radius: 999px;
-    padding: .85rem 1.1rem;
-    font-weight: 950;
-    border: 1px solid rgba(255,255,255,.18);
-    background: rgba(255,255,255,.10);
-    color: rgba(255,255,255,.92);
-    text-decoration:none;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
+  .preview-badges{
+    display:flex;
+    flex-wrap:wrap;
     gap:.5rem;
-  }
-  .kg-btn:hover{ filter: brightness(1.05); }
-
-  .kg-btn-solid{
-    border-color: rgba(200,169,106,.55);
-    background: linear-gradient(180deg, #e6d3a2, #c8a96a);
-    color: #1b140a;
-    box-shadow: 0 18px 44px rgba(0,0,0,.18);
+    margin-top:1rem;
   }
 
-  .kg-grid{
+  .preview-badge{
+    border-radius:999px;
+    padding:.35rem .8rem;
+    border:1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.08);
+    font-size:.78rem;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform: uppercase;
+  }
+
+  .simple-card{
+    border-radius: 20px;
+    border:1px solid rgba(15,23,42,.08);
+    background: rgba(255,255,255,.98);
+    padding: 1.1rem 1.15rem;
+    margin-bottom: 1rem;
+  }
+
+  .simple-card h3{
+    font-size:1rem;
+    font-weight:950;
+    margin-bottom:.8rem;
+    color:#0f172a;
+  }
+
+  .photo-grid{
     display:grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: .75rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .8rem;
   }
-  .kg-photo{
-    border-radius: 16px;
+
+  .photo-box{
+    border-radius: 18px;
     overflow:hidden;
-    border: 1px solid rgba(15,23,42,.10);
-    background: rgba(15,23,42,.04);
-    aspect-ratio: 4/3;
+    background: rgba(15,23,42,.05);
+    border:1px solid rgba(15,23,42,.08);
+    aspect-ratio: 4 / 3;
   }
-  .kg-photo img{
+
+  .photo-box img{
     width:100%;
     height:100%;
-    object-fit: cover;
+    object-fit:cover;
     display:block;
   }
 
-  .kg-item{
-    border-radius: 18px;
-    border: 1px solid rgba(15,23,42,.08);
-    background: rgba(15,23,42,.03);
-    padding: .9rem 1rem;
+  .item-row{
     display:flex;
     justify-content:space-between;
-    gap: 1rem;
-    margin-bottom: .6rem;
+    gap:1rem;
+    border-radius:16px;
+    border:1px solid rgba(15,23,42,.08);
+    background: rgba(15,23,42,.03);
+    padding:.8rem .95rem;
+    margin-bottom:.65rem;
+    font-weight:800;
   }
-  .kg-item strong{ font-weight: 950; color: #0b1220; }
-  .kg-item a{ font-weight: 850; text-decoration:none; }
+
+  .preview-text{
+    color: rgba(15,23,42,.8);
+    font-weight: 700;
+    line-height: 1.65;
+    white-space: pre-line;
+  }
 
   @@media (max-width: 992px){
-    .kg-grid{ grid-template-columns: repeat(2, 1fr); }
-    .kg-hero h1{ font-size: 2.2rem; }
-  }
-  @@media (max-width: 576px){
-    .kg-grid{ grid-template-columns: 1fr; }
+    .admin-layout{
+      grid-template-columns: 1fr;
+    }
+    .admin-grid-2{
+      grid-template-columns: 1fr;
+    }
+    .photo-grid{
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 }
 
-<div class="py-5">
-  <div class="container">
+<div class="py-4 py-lg-5">
+  <div class="container admin-shell">
 
-    @* ✅ ADMIN ACTION BAR *@
-    <div class="kg-card" style="border:1px solid rgba(245,158,11,.35); background:rgba(255,251,235,.92);">
-      <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
+    <div class="admin-topbar">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
         <div>
-          <div style="font-weight:950;color:#7c2d12;letter-spacing:.10em;text-transform:uppercase;font-size:.78rem;">
-            Admin preview
+          <div class="admin-topbar-label">Admin verification review</div>
+          <div class="admin-topbar-title">@(Model.Title ?? $"Need #{Model.Id}")</div>
+          <div class="admin-topbar-sub">
+            Review tone: <strong>@reviewTone</strong>
           </div>
-          <div class="kg-muted" style="color:#7c2d12;">
-            Approve publishes. Reject keeps it hidden and stores a reason.
-          </div>
-          @if (isRejected)
-          {
-            <div class="mt-2" style="font-weight:850;color:#b91c1c;">
-              Rejected: @Model.RejectionReason
-            </div>
-          }
         </div>
 
-        <div class="d-flex gap-2 flex-wrap">
-          <a class="btn btn-outline-dark" style="border-radius:999px;font-weight:900;"
-             asp-controller="AdminNeeds" asp-action="Index" asp-route-key="@adminKey">
-             ← Back to Admin list
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-outline-dark pill-btn"
+             asp-controller="AdminNeeds"
+             asp-action="Index"
+             asp-route-key="@adminKey">
+            ← Back to Admin list
           </a>
 
           @if (Model.IsPublished)
           {
-            <a class="btn btn-outline-dark" style="border-radius:999px;font-weight:900;"
-               asp-controller="Needs" asp-action="Details" asp-route-id="@Model.Id" target="_blank">
-               Open public page
+            <a class="btn btn-outline-dark pill-btn"
+               asp-controller="Needs"
+               asp-action="Details"
+               asp-route-id="@Model.Id"
+               target="_blank">
+              Open public page
             </a>
           }
         </div>
       </div>
 
-      <div class="d-flex flex-wrap gap-2 mt-3 align-items-center">
+      <div class="status-row">
+        <span class="status-badge">@Model.VerificationLevel</span>
+
+        @if (Model.IsEmailVerified)
+        {
+          <span class="status-badge status-ok">Email verified</span>
+        }
+        else
+        {
+          <span class="status-badge status-warn">Email not verified</span>
+        }
+
+        @if (Model.IsPhoneVerified)
+        {
+          <span class="status-badge status-ok">Phone verified</span>
+        }
+        else
+        {
+          <span class="status-badge status-warn">Phone not verified</span>
+        }
+
+        @if (hasToken)
+        {
+          <span class="status-badge status-info">Token present</span>
+        }
+        else
+        {
+          <span class="status-badge status-warn">Token missing</span>
+        }
+
+        @if (Model.IsSuspicious || suspiciousPaymentText)
+        {
+          <span class="status-badge status-danger">High risk</span>
+        }
+        else
+        {
+          <span class="status-badge status-ok">No risk flag</span>
+        }
+
+        @if (isRejected)
+        {
+          <span class="status-badge status-danger">Rejected</span>
+        }
+        else if (isPending)
+        {
+          <span class="status-badge status-warn">Pending</span>
+        }
+        else if (isLive)
+        {
+          <span class="status-badge status-ok">Published</span>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.InternalReviewStatus))
+        {
+          <span class="status-badge">@Model.InternalReviewStatus</span>
+        }
+      </div>
+
+      <div class="admin-actions">
         @if (!Model.IsPublished)
         {
           <form asp-controller="AdminNeeds" asp-action="Approve" method="post" class="d-inline">
@@ -281,242 +533,447 @@
             <input type="hidden" name="key" value="@adminKey" />
             <input type="hidden" name="id" value="@Model.Id" />
             <input type="hidden" name="returnUrl" value="@returnUrl" />
-            <button type="submit" class="btn btn-success" style="border-radius:999px;font-weight:950;">
-              Approve & Publish
-            </button>
+            <button type="submit" class="btn btn-success pill-btn">Approve & Publish</button>
           </form>
 
-          <form asp-controller="AdminNeeds" asp-action="Reject" method="post" class="d-flex gap-2 flex-wrap">
+          <form asp-controller="AdminNeeds" asp-action="Reject" method="post" class="d-flex gap-2 flex-wrap align-items-center">
             @Html.AntiForgeryToken()
             <input type="hidden" name="key" value="@adminKey" />
             <input type="hidden" name="id" value="@Model.Id" />
             <input type="hidden" name="returnUrl" value="@returnUrl" />
-
-            <input type="text" name="reason" required
+            <input type="text"
+                   name="reason"
+                   required
                    class="form-control"
                    placeholder="Rejection reason (required)"
-                   style="max-width:420px;border-radius:999px;font-weight:750;" />
-
-            <button type="submit" class="btn btn-danger" style="border-radius:999px;font-weight:950;">
-              Reject
-            </button>
+                   style="max-width:380px;" />
+            <button type="submit" class="btn btn-danger pill-btn">Reject</button>
           </form>
         }
-        else
-        {
-          <span class="badge bg-success" style="font-size:.85rem;padding:.5rem .8rem;border-radius:999px;">
-            Published
-          </span>
-        }
-      </div>
-    </div>
-
-    <div class="kg-hero mb-4">
-      <div class="text-uppercase" style="letter-spacing:.18em;font-weight:900;opacity:.85;font-size:.8rem;">
-        Need preview
-      </div>
-
-      <h1>@(Model.Title ?? $"Need #{Model.Id}")</h1>
-      <div class="kg-hero-sub">
-        @Model.Category • @Model.Location
-      </div>
-
-      <div class="kg-badges">
-        <div class="kg-badge">@Model.VerificationLevel</div>
-        <div class="kg-badge">@pct% funded</div>
-        <div class="kg-badge">Created @Model.CreatedAt.ToString("MMM d, yyyy")</div>
 
         @if (isRejected)
         {
-          <div class="kg-badge kg-badge-danger">Rejected</div>
-        }
-        else if (isPending)
-        {
-          <div class="kg-badge kg-badge-warn">Pending</div>
-        }
-        else
-        {
-          <div class="kg-badge">Live</div>
+          <div class="review-note w-100">
+            <strong>Rejection reason:</strong>
+            @Model.RejectionReason
+          </div>
         }
       </div>
-
-      <div class="mt-3 d-flex flex-wrap gap-2">
-        <a class="kg-btn" asp-controller="AdminNeeds" asp-action="Index" asp-route-key="@adminKey">← Back</a>
-      </div>
-
-      @if (!Model.IsPublished)
-      {
-        <div class="mt-3 p-3" style="border-radius:18px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);font-weight:750;color:rgba(255,255,255,.86);">
-          This is not public yet. You’re viewing an admin-only preview.
-        </div>
-      }
     </div>
 
-    <div class="row g-4">
-      <div class="col-lg-7">
+    <div class="admin-layout">
+      <div>
+        <div class="admin-card">
+          <div class="section-kicker">Requester identity</div>
+          <div class="section-title">Private requester details</div>
 
-        <div class="kg-card">
-          <div class="d-flex justify-content-between align-items-end mb-2">
-            <div class="kg-h">Funding</div>
-            <div class="kg-muted">
-              @raised.ToString("C0") raised • Goal @goal.ToString("C0") • Still needed @remaining.ToString("C0")
+          <div class="admin-grid-2">
+            <div class="info-box">
+              <div class="info-label">Requester name</div>
+              <div class="info-value @(hasRequesterName ? "" : "muted-value")">
+                @(hasRequesterName ? Model.RequesterName : "Missing")
+              </div>
             </div>
-          </div>
-          <div class="kg-progress mb-2">
-            <div style="width:@pct%"></div>
-          </div>
-          <div class="kg-muted" style="font-size:.9rem;">
-            Amounts shown are pledged. Payments should be collected only after verification.
+
+            <div class="info-box">
+              <div class="info-label">Requester email</div>
+              <div class="info-value @(hasEmail ? "" : "muted-value")">
+                @(hasEmail ? Model.RequesterEmail : "Missing")
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Phone number</div>
+              <div class="info-value @(hasPhone ? "" : "muted-value")">
+                @(hasPhone ? Model.PhoneNumber : "Missing")
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Submission token</div>
+              <div class="info-value @(hasToken ? "" : "muted-value")">
+                @(hasToken ? Model.SubmissionToken : "Missing")
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Submitted at</div>
+              <div class="info-value">
+                @Model.CreatedAt.ToString("yyyy-MM-dd h:mm tt 'UTC'")
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Category and location</div>
+              <div class="info-value">
+                @Model.Category • @Model.Location
+              </div>
+            </div>
           </div>
         </div>
 
-        @if (photos.Count > 0)
-        {
-          <div class="kg-card">
-            <div class="kg-h">Photos</div>
-            <div class="kg-grid">
-              @foreach (var p in photos)
-              {
-                <div class="kg-photo">
-                  <img src="@p" alt="Need photo" />
-                </div>
-              }
+        <div class="admin-card">
+          <div class="section-kicker">Institution & payment safety</div>
+          <div class="section-title">Verification package</div>
+
+          <div class="admin-grid-2">
+            <div class="info-box">
+              <div class="info-label">Institution name</div>
+              <div class="info-value @(string.IsNullOrWhiteSpace(Model.InstitutionName) ? "muted-value" : "")">
+                @(string.IsNullOrWhiteSpace(Model.InstitutionName) ? "Missing" : Model.InstitutionName)
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Institution type</div>
+              <div class="info-value @(string.IsNullOrWhiteSpace(Model.InstitutionType) ? "muted-value" : "")">
+                @(string.IsNullOrWhiteSpace(Model.InstitutionType) ? "Missing" : Model.InstitutionType)
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Private institution address</div>
+              <div class="info-value @(hasPrivateAddress ? "" : "muted-value")">
+                @(hasPrivateAddress ? Model.InstitutionFullAddress : "Missing")
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Institution payment link</div>
+              <div class="info-value @(hasOfficialLink ? "" : "muted-value")">
+                @if (hasOfficialLink)
+                {
+                  <a href="@Model.InstitutionPaymentLink" target="_blank" rel="noopener noreferrer">
+                    @Model.InstitutionPaymentLink
+                  </a>
+                }
+                else
+                {
+                  <span>Missing</span>
+                }
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Pay to</div>
+              <div class="info-value @(string.IsNullOrWhiteSpace(Model.PayTo) ? "muted-value" : "")">
+                @(string.IsNullOrWhiteSpace(Model.PayTo) ? "Missing" : Model.PayTo)
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Direct to institution preferred</div>
+              <div class="info-value">
+                @(Model.PreferDirectToInstitution ? "Yes" : "No")
+              </div>
             </div>
           </div>
-        }
 
-        @if (!string.IsNullOrWhiteSpace(story))
-        {
-          <div class="kg-card">
-            <div class="kg-h">Story</div>
-            <div class="kg-muted" style="white-space:pre-wrap;">@story</div>
+          <div class="status-row mt-3">
+            @if (hasInstitution)
+            {
+              <span class="status-badge status-ok">Institution details present</span>
+            }
+            else
+            {
+              <span class="status-badge status-warn">Institution details missing</span>
+            }
+
+            @if (hasOfficialLink)
+            {
+              <span class="status-badge @(officialLinkLooksOkay ? "status-ok" : "status-warn")">
+                @(officialLinkLooksOkay ? "Official-looking link" : "Link needs review")
+              </span>
+            }
+            else
+            {
+              <span class="status-badge status-warn">No payment link</span>
+            }
+
+            @if (suspiciousPaymentText)
+            {
+              <span class="status-badge status-danger">Personal payment handle detected</span>
+            }
           </div>
-        }
-
-        <div class="kg-card">
-          <div class="kg-h">Details</div>
-
-          @if (!string.IsNullOrWhiteSpace(dream))
-          {
-            <div class="mb-3">
-              <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Long-term dream</div>
-              <div class="kg-muted" style="white-space:pre-wrap;">@dream</div>
-            </div>
-          }
-
-          @if (!string.IsNullOrWhiteSpace(tried))
-          {
-            <div class="mb-3">
-              <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">What has already been tried</div>
-              <div class="kg-muted" style="white-space:pre-wrap;">@tried</div>
-            </div>
-          }
-
-          @if (!string.IsNullOrWhiteSpace(timing))
-          {
-            <div class="mb-0">
-              <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Timing</div>
-              <div class="kg-muted" style="white-space:pre-wrap;">@timing</div>
-            </div>
-          }
         </div>
 
-        @if (parsedItems.Count > 0)
-        {
-          <div class="kg-card">
-            <div class="kg-h">Requested items</div>
+        <div class="admin-card">
+          <div class="section-kicker">Verification controls</div>
+          <div class="section-title">Review and moderation</div>
 
-            @foreach (var it in parsedItems)
-            {
-              <div class="kg-item">
-                <div>
-                  <strong>@it.Name</strong>
-                  @if (!string.IsNullOrWhiteSpace(it.Link))
-                  {
-                    <div class="kg-muted" style="font-size:.9rem;">
-                      <a href="@it.Link" target="_blank" rel="noopener">View link</a>
-                    </div>
-                  }
+          <form method="post" asp-controller="AdminNeeds" asp-action="UpdateVerification" class="admin-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <input type="hidden" name="key" value="@adminKey" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="emailVerified" value="true" @(Model.IsEmailVerified ? "checked" : "") />
+                  <label class="form-check-label">Email verified</label>
                 </div>
-                <div style="font-weight:950;color:#0b1220;white-space:nowrap;">
-                  @it.Cost
+                <input type="hidden" name="emailVerified" value="false" />
+              </div>
+
+              <div class="col-md-6">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="phoneVerified" value="true" @(Model.IsPhoneVerified ? "checked" : "") />
+                  <label class="form-check-label">Phone verified</label>
                 </div>
+                <input type="hidden" name="phoneVerified" value="false" />
               </div>
-            }
-          </div>
-        }
 
-        @if (updates.Count > 0)
-        {
-          <div class="kg-card">
-            <div class="kg-h">Updates</div>
-            @foreach (var u in updates)
-            {
-              <div class="mb-3" style="border-left:4px solid rgba(200,169,106,.65);padding-left:1rem;">
-                <div style="font-weight:950;color:#0b1220;">@u.Title</div>
-                <div class="kg-muted" style="font-size:.9rem;">@u.CreatedAtUtc.ToString("MMM d, yyyy") @(!string.IsNullOrWhiteSpace(u.PublicName) ? $"• {u.PublicName}" : "")</div>
-                <div class="kg-muted mt-2" style="white-space:pre-wrap;">@u.Message</div>
+              <div class="col-md-6">
+                <label class="form-label">Internal review status</label>
+                <select class="form-select" name="status">
+                  <option value="Pending" selected="@(Model.InternalReviewStatus == "Pending")">Pending</option>
+                  <option value="Needs More Info" selected="@(Model.InternalReviewStatus == "Needs More Info")">Needs More Info</option>
+                  <option value="Flagged" selected="@(Model.InternalReviewStatus == "Flagged")">Flagged</option>
+                  <option value="Approved" selected="@(Model.InternalReviewStatus == "Approved")">Approved</option>
+                  <option value="Rejected" selected="@(Model.InternalReviewStatus == "Rejected")">Rejected</option>
+                </select>
               </div>
-            }
-          </div>
-        }
 
+              <div class="col-md-6">
+                <label class="form-label">Verification level</label>
+                <form asp-controller="AdminNeeds" asp-action="SetVerificationLevel" method="post">
+                  @Html.AntiForgeryToken()
+                  <input type="hidden" name="id" value="@Model.Id" />
+                  <input type="hidden" name="key" value="@adminKey" />
+                  <input type="hidden" name="returnUrl" value="@returnUrl" />
+                  <select class="form-select mb-2" name="verificationLevel">
+                    <option value="BasicContactVerified" selected="@(Model.VerificationLevel == VerificationLevel.BasicContactVerified)">BasicContactVerified</option>
+                    <option value="CommunityVerified" selected="@(Model.VerificationLevel == VerificationLevel.CommunityVerified)">CommunityVerified</option>
+                    <option value="OrganizationVerified" selected="@(Model.VerificationLevel == VerificationLevel.OrganizationVerified)">OrganizationVerified</option>
+                  </select>
+                  <input type="text" class="form-control mb-2" name="note" placeholder="Optional verification note" value="@Model.VerificationNote" />
+                  <button type="submit" class="btn btn-outline-dark pill-btn">Save verification level</button>
+                </form>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Risk notes</label>
+                <textarea class="form-control" name="riskNotes">@Model.RiskNotes</textarea>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Internal review notes</label>
+                <textarea class="form-control" name="internalNotes">@Model.InternalReviewNotes</textarea>
+              </div>
+            </div>
+
+            <div class="mini-actions">
+              <button type="submit" class="btn btn-dark pill-btn">Save review state</button>
+            </div>
+          </form>
+
+          <div class="mini-actions">
+            <form asp-controller="AdminNeeds" asp-action="MarkNeedsInfo" method="post">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="id" value="@Model.Id" />
+              <input type="hidden" name="key" value="@adminKey" />
+              <input type="hidden" name="returnUrl" value="@returnUrl" />
+              <input type="hidden" name="notes" value="Need more information before approval." />
+              <button type="submit" class="btn btn-outline-dark pill-btn">Mark Needs More Info</button>
+            </form>
+
+            <form asp-controller="AdminNeeds" asp-action="FlagSuspicious" method="post">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="id" value="@Model.Id" />
+              <input type="hidden" name="key" value="@adminKey" />
+              <input type="hidden" name="returnUrl" value="@returnUrl" />
+              <input type="hidden" name="notes" value="Flagged for manual fraud/risk review." />
+              <button type="submit" class="btn btn-outline-danger pill-btn">Flag suspicious</button>
+            </form>
+          </div>
+        </div>
       </div>
 
-      <div class="col-lg-5">
+      <div>
+        <div class="admin-card">
+          <div class="section-kicker">Audit trail</div>
+          <div class="section-title">Recorded admin history</div>
 
-        <div class="kg-card">
-          <div class="kg-h">Trust level</div>
-          <div class="kg-muted">
-            Verification level: <strong>@Model.VerificationLevel</strong>
-          </div>
-
-          @if (!string.IsNullOrWhiteSpace(Model.VerificationNote))
-          {
-            <div class="mt-2 kg-muted" style="white-space:pre-wrap;">@Model.VerificationNote</div>
-          }
-
-          @if (!string.IsNullOrWhiteSpace(Model.PayTo))
-          {
-            <hr class="my-3" />
-            <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Pay to</div>
-            <div class="kg-muted">@Model.PayTo</div>
-          }
-
-          @if (!string.IsNullOrWhiteSpace(Model.InstitutionName) || !string.IsNullOrWhiteSpace(Model.InstitutionType))
-          {
-            <hr class="my-3" />
-            <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Institution</div>
-            <div class="kg-muted">
-              @($"{Model.InstitutionType} {Model.InstitutionName}".Trim())
-            </div>
-          }
-
-          @if (!string.IsNullOrWhiteSpace(Model.InstitutionPaymentLink))
-          {
-            <div class="mt-2">
-              <a class="btn btn-outline-dark w-100" href="@Model.InstitutionPaymentLink" target="_blank" rel="noopener"
-                 style="border-radius:999px;font-weight:900;">
-                Open official payment link
-              </a>
-              <div class="kg-muted mt-2" style="font-size:.88rem;">
-                This should be an official invoice/payment page (not a handle).
+          <div class="admin-grid-2">
+            <div class="info-box">
+              <div class="info-label">Reviewed by</div>
+              <div class="info-value @(string.IsNullOrWhiteSpace(Model.ReviewedBy) ? "muted-value" : "")">
+                @(string.IsNullOrWhiteSpace(Model.ReviewedBy) ? "Not recorded" : Model.ReviewedBy)
               </div>
             </div>
-          }
+
+            <div class="info-box">
+              <div class="info-label">Reviewed at</div>
+              <div class="info-value @(Model.ReviewedAtUtc.HasValue ? "" : "muted-value")">
+                @(Model.ReviewedAtUtc.HasValue ? Model.ReviewedAtUtc.Value.ToString("yyyy-MM-dd h:mm tt 'UTC'") : "Not recorded")
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Verified by</div>
+              <div class="info-value @(string.IsNullOrWhiteSpace(Model.VerifiedBy) ? "muted-value" : "")">
+                @(string.IsNullOrWhiteSpace(Model.VerifiedBy) ? "Not recorded" : Model.VerifiedBy)
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Verified at</div>
+              <div class="info-value @(Model.VerifiedAtUtc.HasValue ? "" : "muted-value")">
+                @(Model.VerifiedAtUtc.HasValue ? Model.VerifiedAtUtc.Value.ToString("yyyy-MM-dd h:mm tt 'UTC'") : "Not recorded")
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Email verified at</div>
+              <div class="info-value @(Model.EmailVerifiedAtUtc.HasValue ? "" : "muted-value")">
+                @(Model.EmailVerifiedAtUtc.HasValue ? Model.EmailVerifiedAtUtc.Value.ToString("yyyy-MM-dd h:mm tt 'UTC'") : "Not verified")
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">Verification note</div>
+              <div class="info-value @(hasVerificationNote ? "" : "muted-value")">
+                @(hasVerificationNote ? Model.VerificationNote : "None")
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="kg-card">
-          <div class="kg-h">Admin checklist</div>
-          <ul class="kg-muted" style="font-weight:750;margin-bottom:0;">
-            <li>Story is specific and believable</li>
-            <li>Requested items + costs make sense</li>
-            <li>No personal payment handles in text</li>
-            <li>Photos look relevant (if provided)</li>
-            <li>Institution link is official (if present)</li>
-          </ul>
+        <div class="admin-card">
+          <div class="section-kicker">Risk signals</div>
+          <div class="section-title">What stands out</div>
+
+          <div class="review-note">
+            <div><strong>Risk notes:</strong> @(string.IsNullOrWhiteSpace(Model.RiskNotes) ? "None" : Model.RiskNotes)</div>
+            <div class="mt-2"><strong>Internal review notes:</strong> @(string.IsNullOrWhiteSpace(Model.InternalReviewNotes) ? "None" : Model.InternalReviewNotes)</div>
+          </div>
+
+          <div class="status-row mt-3">
+            <span class="status-badge @(Model.IsSuspicious ? "status-danger" : "status-ok")">
+              @(Model.IsSuspicious ? "Marked suspicious" : "Not marked suspicious")
+            </span>
+
+            <span class="status-badge @(looksLikePersonalHandle(Model.PayTo) ? "status-danger" : "status-ok")">
+              @(looksLikePersonalHandle(Model.PayTo) ? "Pay-to field needs review" : "Pay-to field looks cleaner")
+            </span>
+
+            <span class="status-badge @(hasPrivateAddress ? "status-ok" : "status-warn")">
+              @(hasPrivateAddress ? "Private address present" : "Private address missing")
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-card">
+      <div class="section-kicker">Public-style preview</div>
+      <div class="section-title">What a donor-facing version roughly looks like</div>
+
+      <div class="preview-hero">
+        <div class="section-kicker" style="color:rgba(255,255,255,.7);margin-bottom:.35rem;">Need preview</div>
+        <h1>@(Model.Title ?? $"Need #{Model.Id}")</h1>
+        <div class="preview-sub">@Model.Category • @Model.Location</div>
+
+        <div class="preview-badges">
+          <div class="preview-badge">@Model.VerificationLevel</div>
+          <div class="preview-badge">@pct% funded</div>
+          <div class="preview-badge">Created @Model.CreatedAt.ToString("MMM d, yyyy")</div>
+          <div class="preview-badge">@(isPending ? "Pending" : isRejected ? "Rejected" : "Live")</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-8">
+          <div class="simple-card">
+            <h3>Story</h3>
+            <div class="preview-text">@(string.IsNullOrWhiteSpace(story) ? Model.Description : story)</div>
+          </div>
+
+          <div class="simple-card">
+            <h3>Details</h3>
+
+            @if (!string.IsNullOrWhiteSpace(dream))
+            {
+              <div class="mb-3">
+                <div class="fw-bold mb-1">Long-term dream</div>
+                <div class="preview-text">@dream</div>
+              </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(tried))
+            {
+              <div class="mb-3">
+                <div class="fw-bold mb-1">What has already been tried</div>
+                <div class="preview-text">@tried</div>
+              </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(timing))
+            {
+              <div>
+                <div class="fw-bold mb-1">Timing</div>
+                <div class="preview-text">@timing</div>
+              </div>
+            }
+          </div>
+
+          <div class="simple-card">
+            <h3>Requested items</h3>
+
+            @if (parsedItems.Any())
+            {
+              @foreach (var item in parsedItems)
+              {
+                <div class="item-row">
+                  <div>
+                    <div>@item.Name</div>
+                    @if (!string.IsNullOrWhiteSpace(item.Link))
+                    {
+                      <div class="mt-1">
+                        <a href="@item.Link" target="_blank" rel="noopener noreferrer">Open item link</a>
+                      </div>
+                    }
+                  </div>
+                  <div>@item.Cost</div>
+                </div>
+              }
+            }
+            else
+            {
+              <div class="preview-text">No structured items found.</div>
+            }
+          </div>
         </div>
 
+        <div class="col-lg-4">
+          <div class="simple-card">
+            <h3>Funding</h3>
+            <div class="preview-text">
+              ¤@raised raised • Goal ¤@goal • Still needed ¤@remaining
+            </div>
+          </div>
+
+          <div class="simple-card">
+            <h3>Photos</h3>
+
+            @if (photos.Any())
+            {
+              <div class="photo-grid">
+                @foreach (var photo in photos)
+                {
+                  <div class="photo-box">
+                    <img src="@photo" alt="Need photo" />
+                  </div>
+                }
+              </div>
+            }
+            else
+            {
+              <div class="preview-text">No photos uploaded.</div>
+            }
+          </div>
+        </div>
       </div>
     </div>
 
