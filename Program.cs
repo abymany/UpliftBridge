@@ -109,10 +109,10 @@ using (var scope = app.Services.CreateScope())
         db.Database.Migrate();
         SeedData.Initialize(db);
     }
-    else if (runMigrations)
-    {
-        db.Database.Migrate();
-    }
+   // else if (runMigrations)
+    //{
+    //  db.Database.Migrate();
+    //}
 }
 
 // Middleware
