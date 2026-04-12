@@ -12,9 +12,12 @@ using UpliftBridge.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Render port binding
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+var port = Environment.GetEnvironmentVariable("PORT");
 
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
 // MVC
 builder.Services.AddControllersWithViews(options =>
 {
@@ -59,6 +62,9 @@ if (env.IsProduction())
 }
 else
 {
+    // In development:
+    // - use Postgres only when the connection string is clearly an Npgsql-style string
+    // - otherwise use local SQLite
     if (!string.IsNullOrWhiteSpace(connString) &&
         connString.StartsWith("Host=", StringComparison.OrdinalIgnoreCase))
     {
