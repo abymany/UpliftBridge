@@ -114,7 +114,15 @@ using (var scope = app.Services.CreateScope())
     //  db.Database.Migrate();
     //}
 }
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+    db.Database.EnsureDeleted();   // 🔥 wipes database
+    db.Database.EnsureCreated();   // rebuilds from models
+
+    SeedData.Initialize(db);
+}
 // Middleware
 if (!app.Environment.IsDevelopment())
 {
