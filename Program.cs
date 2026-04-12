@@ -35,6 +35,8 @@ builder.Services.AddSession(options =>
 var dpKeysPath = "/var/data/dpkeys";
 if (Directory.Exists("/var/data"))
 {
+    Directory.CreateDirectory(dpKeysPath);
+
     builder.Services
         .AddDataProtection()
         .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath))
@@ -57,11 +59,6 @@ if (env.IsProduction())
 }
 else
 {
-    // Development:
-    // - use SQLite if connection string is SQLite
-    // - use Postgres only if connection string clearly looks like Postgres
-    // - otherwise fall back to SQLite
-
     if (!string.IsNullOrWhiteSpace(connString) &&
         connString.StartsWith("Host=", StringComparison.OrdinalIgnoreCase))
     {
@@ -109,16 +106,12 @@ using (var scope = app.Services.CreateScope())
         db.Database.Migrate();
         SeedData.Initialize(db);
     }
-   // else if (runMigrations)
-    //{
-    //  db.Database.Migrate();
-    //}
+    else if (runMigrations)
+    {
+        db.Database.Migrate();
+    }
 }
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    SeedData.Initialize(db);
-}
+
 // Middleware
 if (!app.Environment.IsDevelopment())
 {
