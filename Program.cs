@@ -18,6 +18,7 @@ if (!string.IsNullOrEmpty(port))
 {
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 }
+
 // MVC
 builder.Services.AddControllersWithViews(options =>
 {
@@ -109,12 +110,34 @@ using (var scope = app.Services.CreateScope())
 
     if (app.Environment.IsDevelopment())
     {
-        db.Database.Migrate();
-        SeedData.Initialize(db);
+        try
+        {
+            db.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Development migration skipped: " + ex.Message);
+        }
+
+        try
+        {
+            SeedData.Initialize(db);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Seed skipped: " + ex.Message);
+        }
     }
     else if (runMigrations)
     {
-        db.Database.Migrate();
+        try
+        {
+            db.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Production migration skipped: " + ex.Message);
+        }
     }
 }
 
