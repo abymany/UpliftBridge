@@ -35,18 +35,6 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromHours(8);
 });
 
-// Data protection keys on Render disk if available
-var dpKeysPath = "/var/data/dpkeys";
-if (Directory.Exists("/var/data"))
-{
-    Directory.CreateDirectory(dpKeysPath);
-
-    builder.Services
-        .AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath))
-        .SetApplicationName("UpliftBridge");
-}
-
 // -------------------------
 // DATABASE CONFIG
 // -------------------------
@@ -63,9 +51,6 @@ if (env.IsProduction())
 }
 else
 {
-    // In development:
-    // - use Postgres only when the connection string is clearly an Npgsql-style string
-    // - otherwise use local SQLite
     if (!string.IsNullOrWhiteSpace(connString) &&
         connString.StartsWith("Host=", StringComparison.OrdinalIgnoreCase))
     {
@@ -77,6 +62,28 @@ else
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite("Data Source=UpliftBridge.db"));
     }
+}
+
+// -------------------------
+// DATA PROTECTION
+// -------------------------
+var dpKeysPath = "/var/data/dpkeys";
+if (Directory.Exists("/var/data"))
+{
+    Directory.CreateDirectory(dpKeysPath);
+
+    builder.Services
+        .AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath))
+        .SetApplicationName("UpliftBridge");
+}
+else
+{
+    // No persistent disk — persist keys to the database instead
+    builder.Services
+        .AddDataProtection()
+        .PersistKeysToDbContext<AppDbContext>()
+        .SetApplicationName("UpliftBridge");
 }
 
 var app = builder.Build();
@@ -110,34 +117,16 @@ using (var scope = app.Services.CreateScope())
 
     if (app.Environment.IsDevelopment())
     {
-        try
-        {
-            db.Database.Migrate();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Development migration skipped: " + ex.Message);
-        }
+        try { db.Database.Migrate(); }
+        catch (Exception ex) { Console.WriteLine("Development migration skipped: " + ex.Message); }
 
-        try
-        {
-            SeedData.Initialize(db);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Seed skipped: " + ex.Message);
-        }
+        try { SeedData.Initialize(db); }
+        catch (Exception ex) { Console.WriteLine("Seed skipped: " + ex.Message); }
     }
     else if (runMigrations)
     {
-        try
-        {
-            db.Database.Migrate();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Production migration skipped: " + ex.Message);
-        }
+        try { db.Database.Migrate(); }
+        catch (Exception ex) { Console.WriteLine("Production migration skipped: " + ex.Message); }
     }
 }
 

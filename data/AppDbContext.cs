@@ -1,9 +1,10 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using UpliftBridge.Models;
 
 namespace UpliftBridge.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : DbContext, IDataProtectionKeyContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -15,6 +16,7 @@ namespace UpliftBridge.Data
         public DbSet<Story> Stories { get; set; } = null!;
         public DbSet<NeedUpdate> NeedUpdates { get; set; } = null!;
         public DbSet<NeedPhoto> NeedPhotos { get; set; } = null!;
+        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -23,7 +25,6 @@ namespace UpliftBridge.Data
             modelBuilder.Entity<Need>(entity =>
             {
                 entity.HasKey(x => x.Id);
-
                 entity.Property(x => x.GoalAmount).HasColumnType("decimal(18,2)");
                 entity.Property(x => x.AmountRaised).HasColumnType("decimal(18,2)");
             });
@@ -31,7 +32,6 @@ namespace UpliftBridge.Data
             modelBuilder.Entity<NeedPhoto>(entity =>
             {
                 entity.HasKey(x => x.Id);
-
                 entity.HasOne(x => x.Need)
                     .WithMany()
                     .HasForeignKey(x => x.NeedId)
