@@ -98,12 +98,14 @@ namespace UpliftBridge.Controllers
 
             var photos = _context.NeedPhotos
                 .AsNoTracking()
-                .Where(p => p.NeedId == id && p.Path != null && p.Path.Trim() != "")
-                .OrderByDescending(p => p.CreatedAtUtc)
-                .Select(p => NormalizePhotoPath(p.Path))
+                .Where(n => n.NeedId == id && n.Path != null && n.Path.Trim() != "")
+                .OrderByDescending(n => n.CreatedAtUtc)
+                .Select(n => n.Path)
+                .ToList()
+                .Select(p => NormalizePhotoPath(p ?? ""))
                 .Where(p => !string.IsNullOrWhiteSpace(p))
                 .ToList();
-
+                
             ViewBag.AdminKey = key ?? "";
             ViewBag.Updates = updates;
             ViewBag.Photos = photos;
