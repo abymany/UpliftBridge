@@ -47,6 +47,18 @@ namespace UpliftBridge.Controllers
             need.InternalReviewStatus = string.IsNullOrWhiteSpace(reviewStatus) ? "Pending" : reviewStatus.Trim();
         }
 
+        private static string NormalizePhotoPath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return string.Empty;
+
+            var clean = path.Trim().Replace("\\", "/");
+            if (!clean.StartsWith("/"))
+                clean = "/" + clean;
+
+            return clean;
+        }
+
         [HttpGet("")]
         public IActionResult Index(string? key)
         {
@@ -86,9 +98,10 @@ namespace UpliftBridge.Controllers
 
             var photos = _context.NeedPhotos
                 .AsNoTracking()
-                .Where(p => p.NeedId == id)
+                .Where(p => p.NeedId == id && p.Path != null && p.Path.Trim() != "")
                 .OrderByDescending(p => p.CreatedAtUtc)
-                .Select(p => p.Path)
+                .Select(p => NormalizePhotoPath(p.Path))
+                .Where(p => !string.IsNullOrWhiteSpace(p))
                 .ToList();
 
             ViewBag.AdminKey = key ?? "";

@@ -13,7 +13,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Render port binding
 var port = Environment.GetEnvironmentVariable("PORT");
-
 if (!string.IsNullOrEmpty(port))
 {
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
@@ -71,18 +70,22 @@ var dpKeysPath = "/var/data/dpkeys";
 if (Directory.Exists("/var/data"))
 {
     Directory.CreateDirectory(dpKeysPath);
-
     builder.Services
         .AddDataProtection()
         .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath))
         .SetApplicationName("UpliftBridge");
 }
-else
+else if (env.IsProduction())
 {
-    // No persistent disk — persist keys to the database instead
     builder.Services
         .AddDataProtection()
         .PersistKeysToDbContext<AppDbContext>()
+        .SetApplicationName("UpliftBridge");
+}
+else
+{
+    builder.Services
+        .AddDataProtection()
         .SetApplicationName("UpliftBridge");
 }
 
@@ -139,9 +142,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseSession();
 app.UseAuthorization();
 
