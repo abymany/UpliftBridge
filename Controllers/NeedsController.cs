@@ -15,6 +15,32 @@ namespace UpliftBridge.Controllers
             _db = db;
         }
 
+        public async Task<IActionResult> Index()
+        {
+            var needs = await _db.Needs
+                .AsNoTracking()
+                .Where(n => n.IsPublished)
+                .OrderByDescending(n => n.CreatedAt)
+                .ToListAsync();
+
+            var needIds = needs.Select(n => n.Id).ToList();
+
+            var photoMap = await _db.NeedPhotos
+                .AsNoTracking()
+                .Where(p => needIds.Contains(p.NeedId) && !string.IsNullOrWhiteSpace(p.Path))
+                .OrderByDescending(p => p.CreatedAtUtc)
+                .ToListAsync();
+
+            ViewBag.PhotoMap = photoMap
+                .GroupBy(p => p.NeedId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => x.Path).FirstOrDefault() ?? ""
+                );
+
+            return View(needs);
+        }
+
         public async Task<IActionResult> Details(int id)
         {
             var need = await _db.Needs.FirstOrDefaultAsync(n => n.Id == id && n.IsPublished);
@@ -87,9 +113,7 @@ namespace UpliftBridge.Controllers
 
             var domain = $"{Request.Scheme}://{Request.Host}";
 
-            var successUrl = !string.IsNullOrWhiteSpace(need.InstitutionPaymentLink)
-                ? domain + $"/Needs/FundSuccess?session_id={{CHECKOUT_SESSION_ID}}&needId={need.Id}"
-                : domain + $"/Needs/FundSuccess?session_id={{CHECKOUT_SESSION_ID}}&needId={need.Id}";
+            var successUrl = domain + $"/Needs/FundSuccess?session_id={{CHECKOUT_SESSION_ID}}&needId={need.Id}";
 
             var options = new SessionCreateOptions
             {
@@ -147,9 +171,6 @@ namespace UpliftBridge.Controllers
                 .FirstOrDefaultAsync(n => n.Id == needId && n.IsPublished);
 
             if (need == null) return NotFound();
-
-            // Important: we do NOT update AmountRaised here.
-            // The gift is completed on the official external site, not collected by UpliftBridge.
 
             return RedirectToAction(nameof(CompleteDonation), new { id = need.Id });
         }
