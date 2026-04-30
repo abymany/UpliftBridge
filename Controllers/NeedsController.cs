@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Stripe;
 using Stripe.Checkout;
 using UpliftBridge.Data;
 using UpliftBridge.Models;
@@ -14,543 +9,145 @@ namespace UpliftBridge.Controllers
 {
     public class NeedsController : Controller
     {
-        private readonly AppDbContext _context;
-        private readonly IWebHostEnvironment _env;
+        private readonly AppDbContext _db;
 
-        public NeedsController(AppDbContext context, IWebHostEnvironment env)
+        public NeedsController(AppDbContext db)
         {
-            _context = context;
-            _env = env;
+            _db = db;
         }
 
-        // ----------------------------------
-        // INDEX – list PUBLIC needs only
-        // ----------------------------------
-        public IActionResult Index()
+        // =========================
+        // DETAILS PAGE
+        // =========================
+        public async Task<IActionResult> Details(int id)
         {
-            var needs = _context.Needs
-                .AsNoTracking()
-                .Where(n => n.IsPublished)
-                .OrderByDescending(n => n.CreatedAt)
-                .ToList();
-
-            var needIds = needs.Select(n => n.Id).ToList();
-
-            var photoMap = _context.NeedPhotos
-                .AsNoTracking()
-                .Where(p => needIds.Contains(p.NeedId) && !string.IsNullOrWhiteSpace(p.Path))
-                .OrderByDescending(p => p.CreatedAtUtc)
-                .ToList()
-                .GroupBy(p => p.NeedId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Select(x => x.Path).FirstOrDefault() ?? ""
-                );
-
-            ViewBag.PhotoMap = photoMap;
-
-            return View(needs);
-        }
-
-        // ----------------------------------
-        // DETAILS – only for published needs
-        // ----------------------------------
-        public IActionResult Details(int id)
-        {
-            var need = _context.Needs
-                .AsNoTracking()
-                .FirstOrDefault(n => n.Id == id && n.IsPublished);
-
+            var need = await _db.Needs.FirstOrDefaultAsync(n => n.Id == id && n.IsPublished);
             if (need == null) return NotFound();
 
-            var updates = _context.NeedUpdates
-                .AsNoTracking()
+            var photos = await _db.NeedPhotos
+                .Where(p => p.NeedId == id && !string.IsNullOrWhiteSpace(p.Path))
+                .Select(p => p.Path)
+                .ToListAsync();
+
+            var updates = await _db.NeedUpdates
                 .Where(u => u.NeedId == id && u.IsVisible)
                 .OrderByDescending(u => u.CreatedAtUtc)
-                .ToList();
+                .ToListAsync();
 
-            var photos = _context.NeedPhotos
-                .AsNoTracking()
-                .Where(p => p.NeedId == id)
-                .OrderByDescending(p => p.CreatedAtUtc)
-                .Select(p => p.Path)
-                .ToList();
-
+            ViewBag.Photos = photos;
             ViewBag.Updates = updates;
-            ViewBag.Photos = photos;
 
             return View(need);
         }
 
-        // ----------------------------------
-        // CREATE – GET
-        // ----------------------------------
-        [HttpGet]
-        public IActionResult Create()
+        // =========================
+        // FUND PAGE (GET)
+        // =========================
+        public async Task<IActionResult> Fund(int id)
         {
-            return View(new NeedCreateViewModel());
-        }
-
-        // ----------------------------------
-        // CREATE – POST (redirects to CreateSuccess)
-        // ----------------------------------
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Create(NeedCreateViewModel vm)
-        {
-            if (vm.PreferDirectToInstitution && string.IsNullOrWhiteSpace(vm.InstitutionPaymentLink))
-            {
-                ModelState.AddModelError(
-                    nameof(vm.InstitutionPaymentLink),
-                    "Institution payment link is required when direct payment is selected."
-                );
-            }
-
-            if (!string.IsNullOrWhiteSpace(vm.InstitutionPaymentLink) &&
-                !Uri.IsWellFormedUriString(vm.InstitutionPaymentLink, UriKind.Absolute))
-            {
-                ModelState.AddModelError(
-                    nameof(vm.InstitutionPaymentLink),
-                    "Please enter a valid, official payment URL."
-                );
-            }
-
-            if (!ModelState.IsValid)
-                return View(vm);
-
-            var desc = BuildNeedDescription(vm);
-            var shortSummary = BuildShortSummary(vm, desc);
-            var submissionToken = Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
-
-            var riskNotes = new List<string>();
-            var loweredDescription = (desc ?? string.Empty).ToLowerInvariant();
-            var loweredPayTo = (vm.PayTo ?? string.Empty).ToLowerInvariant();
-            var loweredInstitutionLink = (vm.InstitutionPaymentLink ?? string.Empty).ToLowerInvariant();
-
-            if (vm.GoalAmount > 5000m)
-                riskNotes.Add("High amount requires manual review.");
-
-            if (!string.IsNullOrWhiteSpace(vm.PayTo) &&
-                (loweredPayTo.Contains("cashapp") ||
-                 loweredPayTo.Contains("venmo") ||
-                 loweredPayTo.Contains("paypal.me") ||
-                 loweredPayTo.Contains("$")))
-            {
-                riskNotes.Add("Contains personal payment handle.");
-            }
-
-            if (loweredDescription.Contains("cashapp") ||
-                loweredDescription.Contains("venmo") ||
-                loweredDescription.Contains("paypal.me"))
-            {
-                riskNotes.Add("Story contains personal payment handle.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(vm.InstitutionPaymentLink) &&
-                !(loweredInstitutionLink.Contains(".edu") ||
-                  loweredInstitutionLink.Contains(".org") ||
-                  loweredInstitutionLink.Contains("school") ||
-                  loweredInstitutionLink.Contains("college") ||
-                  loweredInstitutionLink.Contains("university") ||
-                  loweredInstitutionLink.Contains("hospital") ||
-                  loweredInstitutionLink.Contains("clinic")))
-            {
-                riskNotes.Add("Institution payment link does not look official.");
-            }
-
-            var need = new Need
-            {
-                Title = (vm.Title ?? "").Trim(),
-                Description = desc,
-                ShortSummary = shortSummary,
-
-                Location = (vm.CityCountry ?? "").Trim(),
-                Category = vm.Category,
-
-                GoalAmount = vm.GoalAmount,
-                AmountRaised = 0m,
-
-                RequesterName = (vm.ForWhom ?? "").Trim(),
-                RequesterEmail = (vm.ContactEmail ?? "").Trim(),
-                PhoneNumber = (vm.ContactPhone ?? "").Trim(),
-
-                IsEmailVerified = false,
-                IsPhoneVerified = false,
-                EmailOtpCode = string.Empty,
-                EmailOtpExpiresAtUtc = null,
-                EmailVerifiedAtUtc = null,
-
-                PayTo = (vm.PayTo ?? "").Trim(),
-
-                VerificationLevel = vm.VerificationLevel,
-                VerificationNote = (vm.VerificationNote ?? "").Trim(),
-                VerifiedBy = string.Empty,
-                VerifiedAtUtc = null,
-
-                InstitutionName = (vm.InstitutionName ?? "").Trim(),
-                InstitutionType = (vm.InstitutionType ?? "").Trim(),
-                InstitutionFullAddress = (vm.InstitutionFullAddress ?? "").Trim(),
-                InstitutionPaymentLink = (vm.InstitutionPaymentLink ?? "").Trim(),
-                PreferDirectToInstitution = vm.PreferDirectToInstitution,
-
-                IsSuspicious = riskNotes.Count > 0,
-                RiskNotes = string.Join(" ", riskNotes),
-                InternalReviewStatus = riskNotes.Count > 0 ? "Flagged" : "Pending",
-                InternalReviewNotes = string.Empty,
-
-                IsPublished = false,
-                RejectionReason = string.Empty,
-                ReviewedBy = string.Empty,
-                ReviewedAtUtc = null,
-
-                CreatedAt = DateTime.UtcNow,
-                SubmissionToken = submissionToken
-            };
-
-            _context.Needs.Add(need);
-            _context.SaveChanges();
-
-            SaveNeedPhotos(need.Id, vm);
-
-            return RedirectToAction(nameof(CreateSuccess), new { id = need.Id });
-        }
-
-        // ----------------------------------
-        // CREATE SUCCESS – confirmation page for pending needs
-        // Views/Needs/CreateSuccess.cshtml
-        // ----------------------------------
-        [HttpGet]
-        public IActionResult CreateSuccess(int id)
-        {
-            var need = _context.Needs
-                .AsNoTracking()
-                .FirstOrDefault(n => n.Id == id);
-
+            var need = await _db.Needs.FirstOrDefaultAsync(n => n.Id == id && n.IsPublished);
             if (need == null) return NotFound();
-
-            var photos = _context.NeedPhotos
-                .AsNoTracking()
-                .Where(p => p.NeedId == id)
-                .OrderByDescending(p => p.CreatedAtUtc)
-                .Select(p => p.Path)
-                .ToList();
-
-            ViewBag.Photos = photos;
-
-            return View(need);
-        }
-
-        // ----------------------------------
-        // FUND – GET (shows funding + platform tip)
-        // ----------------------------------
-        [HttpGet]
-        public IActionResult Fund(int id)
-        {
-            var need = _context.Needs
-                .AsNoTracking()
-                .FirstOrDefault(n => n.Id == id && n.IsPublished);
-
-            if (need == null) return NotFound();
-
-            var remaining = Math.Max(0m, need.GoalAmount - need.AmountRaised);
 
             var vm = new FundNeedViewModel
             {
                 NeedId = need.Id,
                 Title = need.Title,
                 GoalAmount = need.GoalAmount,
-                AmountRaised = need.AmountRaised,
-                RemainingAmount = remaining,
-                IsFullyFunded = remaining <= 0m,
-                TipPercent = 1
+                AmountRaised = need.AmountRaised
             };
 
             return View(vm);
         }
 
-        // ----------------------------------
-        // FUND SUCCESS – Stripe returns here
-        // ----------------------------------
-        [HttpGet]
-        public IActionResult FundSuccess(int needId, string session_id)
+        // =========================
+        // CREATE STRIPE SESSION
+        // =========================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateCheckout(FundNeedViewModel vm)
         {
-            if (string.IsNullOrWhiteSpace(session_id))
-                return RedirectToAction("Fund", new { id = needId });
-
-            var sessionService = new SessionService();
-            var session = sessionService.Get(session_id);
-
-            if (!string.Equals(session.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase))
-                return RedirectToAction("Fund", new { id = needId });
-
-            if (session.Metadata == null ||
-                !session.Metadata.TryGetValue("needId", out var metaNeedId) ||
-                !int.TryParse(metaNeedId, out var parsedNeedId) ||
-                parsedNeedId != needId)
-            {
-                return RedirectToAction("Fund", new { id = needId });
-            }
-
-            var need = _context.Needs.FirstOrDefault(n => n.Id == needId && n.IsPublished);
+            var need = await _db.Needs.FirstOrDefaultAsync(n => n.Id == vm.NeedId && n.IsPublished);
             if (need == null) return NotFound();
 
-            decimal giftAmount = 0m;
-            decimal platformSupport = 0m;
+            // 🔴 HARD RULE: always recalc server-side
+            vm.GoalAmount = need.GoalAmount;
+            vm.AmountRaised = need.AmountRaised;
 
-            if (session.Metadata.TryGetValue("giftAmount", out var g) && decimal.TryParse(g, out var giftParsed))
-                giftAmount = Math.Max(0m, giftParsed);
+            var platformFee = vm.PlatformFee;
 
-            if (session.Metadata.TryGetValue("platformSupport", out var p) && decimal.TryParse(p, out var platParsed))
-                platformSupport = Math.Max(0m, platParsed);
-
-            var stripePaid = ((session.AmountTotal ?? 0) / 100m);
-
-            if (Math.Abs(stripePaid - platformSupport) > 0.02m)
-                return RedirectToAction("Fund", new { id = needId });
-
-            var existing = _context.GiftOrders.FirstOrDefault(o => o.StripeSessionId == session_id);
-            GiftOrder order;
-
-            if (existing != null)
+            if (platformFee <= 0)
             {
-                order = existing;
+                ModelState.AddModelError("", "Invalid payment amount.");
+                return View("Fund", vm);
             }
-            else
+
+            var domain = $"{Request.Scheme}://{Request.Host}";
+
+            var options = new SessionCreateOptions
             {
-                var isAnon = session.Metadata.TryGetValue("isAnonymous", out var anon) && anon == "1";
-                var donorEmail = session.Metadata.TryGetValue("donorEmail", out var de) ? de : "";
+                Mode = "payment",
+                SuccessUrl = domain + $"/Needs/Success?session_id={{CHECKOUT_SESSION_ID}}&needId={need.Id}",
+                CancelUrl = domain + $"/Needs/Fund/{need.Id}",
 
-                order = new GiftOrder
+                LineItems = new List<SessionLineItemOptions>
                 {
-                    NeedId = need.Id,
-                    NeedTitle = need.Title,
-                    DonorName = null,
-                    DonorEmail = isAnon ? null : (string.IsNullOrWhiteSpace(donorEmail) ? null : donorEmail),
-                    PledgedGiftAmount = giftAmount,
-                    PlatformSupportPaid = platformSupport,
-                    PaymentStatus = PaymentStatus.Paid,
-                    StripeSessionId = session_id,
-                    StripePaymentIntentId = session.PaymentIntentId ?? "",
-                    CreatedAt = DateTime.UtcNow,
-                    OffsiteStatus = OffsiteGiftStatus.Unconfirmed
-                };
+                    new SessionLineItemOptions
+                    {
+                        Quantity = 1,
+                        PriceData = new SessionLineItemPriceDataOptions
+                        {
+                            Currency = "usd",
+                            UnitAmount = (long)(platformFee * 100), // cents
+                            ProductData = new SessionLineItemPriceDataProductDataOptions
+                            {
+                                Name = "UpliftBridge platform support",
+                                Description = $"Support fee for: {need.Title}"
+                            }
+                        }
+                    }
+                },
 
-                _context.GiftOrders.Add(order);
+                Metadata = new Dictionary<string, string>
+                {
+                    { "needId", need.Id.ToString() },
+                    { "platformFee", platformFee.ToString() },
+                    { "giftAmount", vm.CappedGiftAmount.ToString() }
+                }
+            };
 
+            var service = new SessionService();
+            Session session = service.Create(options);
+
+            return Redirect(session.Url);
+        }
+
+        // =========================
+        // SUCCESS PAGE
+        // =========================
+        public async Task<IActionResult> Success(string session_id, int needId)
+        {
+            if (string.IsNullOrEmpty(session_id))
+                return RedirectToAction("Details", new { id = needId });
+
+            var service = new SessionService();
+            var session = service.Get(session_id);
+
+            if (session.PaymentStatus != "paid")
+                return RedirectToAction("Details", new { id = needId });
+
+            var need = await _db.Needs.FirstOrDefaultAsync(n => n.Id == needId);
+            if (need == null) return NotFound();
+
+            // 🔴 Update raised amount ONLY for platform-tracked gifts
+            if (session.Metadata.TryGetValue("giftAmount", out var giftStr)
+                && decimal.TryParse(giftStr, out var giftAmount))
+            {
                 need.AmountRaised += giftAmount;
-                _context.Needs.Update(need);
-
-                _context.SaveChanges();
             }
 
-            var vm = new FundSuccessViewModel
-            {
-                Need = need,
-                Order = order
-            };
+            await _db.SaveChangesAsync();
 
-            return View(vm);
-        }
-
-        // ----------------------------------
-        // COMPLETE DONATION – send them to official payment link page
-        // ----------------------------------
-        [HttpGet]
-        public IActionResult CompleteDonation(int id)
-        {
-            var need = _context.Needs
-                .AsNoTracking()
-                .FirstOrDefault(n => n.Id == id && n.IsPublished);
-
-            if (need == null) return NotFound();
-
-            return View(need);
-        }
-
-        // ----------------------------------
-        // Helpers
-        // ----------------------------------
-        private void SaveNeedPhotos(int needId, NeedCreateViewModel vm)
-        {
-            var files = vm.Photos;
-            if (files == null || files.Count == 0) return;
-
-            const int MAX_FILES = 6;
-            const long MAX_BYTES = 5 * 1024 * 1024;
-
-            var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            { ".jpg", ".jpeg", ".png", ".webp" };
-
-            var root = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var dir = Path.Combine(root, "uploads", "needs", needId.ToString());
-            Directory.CreateDirectory(dir);
-
-            int saved = 0;
-
-            foreach (var file in files)
-            {
-                if (file == null || file.Length <= 0) continue;
-                if (saved >= MAX_FILES) break;
-                if (file.Length > MAX_BYTES) continue;
-
-                var ext = Path.GetExtension(file.FileName ?? "");
-                if (string.IsNullOrWhiteSpace(ext) || !allowed.Contains(ext)) continue;
-
-                var safeName = $"{Guid.NewGuid():N}{ext.ToLowerInvariant()}";
-                var fullPath = Path.Combine(dir, safeName);
-
-                using (var stream = new FileStream(fullPath, FileMode.Create))
-                {
-                    file.CopyTo(stream);
-                }
-
-                var webPath = $"/uploads/needs/{needId}/{safeName}";
-
-                _context.NeedPhotos.Add(new NeedPhoto
-                {
-                    NeedId = needId,
-                    Path = webPath,
-                    CreatedAtUtc = DateTime.UtcNow
-                });
-
-                saved++;
-            }
-
-            if (saved > 0) _context.SaveChanges();
-        }
-
-        private static string BuildNeedDescription(NeedCreateViewModel vm)
-        {
-            var sb = new StringBuilder();
-
-            static bool IsTrashLocal(string? s)
-            {
-                if (string.IsNullOrWhiteSpace(s)) return true;
-                var v = s.Trim().ToLowerInvariant();
-                return v == "na" || v == "n/a" || v == "none" || v == "-" || v == "--" || v == "null" || v == "0";
-            }
-
-            void AddBlock(string title, string text)
-            {
-                text = (text ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(text)) return;
-
-                if (sb.Length > 0) sb.AppendLine().AppendLine();
-                sb.AppendLine(title);
-                sb.AppendLine(new string('-', Math.Min(title.Length, 28)));
-                sb.AppendLine(text);
-            }
-
-            AddBlock("Story", vm.Story);
-            AddBlock("Long-term dream", vm.LongTermDream);
-            AddBlock("What has already been tried", vm.TriedAlready);
-
-            if (!string.IsNullOrWhiteSpace(vm.Deadline) || !string.IsNullOrWhiteSpace(vm.Urgency))
-            {
-                if (sb.Length > 0) sb.AppendLine().AppendLine();
-                sb.AppendLine("Timing");
-                sb.AppendLine("------");
-                if (!string.IsNullOrWhiteSpace(vm.Deadline)) sb.AppendLine($"Deadline: {vm.Deadline.Trim()}");
-                if (!string.IsNullOrWhiteSpace(vm.Urgency)) sb.AppendLine($"Urgency: {vm.Urgency.Trim()}");
-            }
-
-            var items = (vm.Items ?? new List<NeedItemLineVm>())
-                .Where(i => i != null)
-                .Select(i => new NeedItemLineVm
-                {
-                    Name = (i!.Name ?? "").Trim(),
-                    Cost = (i!.Cost ?? "").Trim(),
-                    Link = (i!.Link ?? "").Trim()
-                })
-                .Select(i => new NeedItemLineVm
-                {
-                    Name = IsTrashLocal(i.Name) ? "" : i.Name,
-                    Cost = IsTrashLocal(i.Cost) ? "" : i.Cost,
-                    Link = IsTrashLocal(i.Link) ? "" : i.Link
-                })
-                .Where(i => !string.IsNullOrWhiteSpace(i.Name) ||
-                            !string.IsNullOrWhiteSpace(i.Cost) ||
-                            !string.IsNullOrWhiteSpace(i.Link))
-                .ToList();
-
-            if (items.Count > 0)
-            {
-                if (sb.Length > 0) sb.AppendLine().AppendLine();
-                sb.AppendLine("Requested items");
-                sb.AppendLine("--------------");
-
-                int n = 1;
-                foreach (var it in items)
-                {
-                    var name = (it.Name ?? "").Trim();
-                    var cost = (it.Cost ?? "").Trim();
-                    var link = (it.Link ?? "").Trim();
-
-                    var line = $"{n}. {name}";
-                    if (!string.IsNullOrWhiteSpace(cost)) line += $" — {cost}";
-                    sb.AppendLine(line);
-
-                    if (!string.IsNullOrWhiteSpace(link)) sb.AppendLine($"   Link: {link}");
-                    n++;
-                }
-            }
-
-            return sb.ToString().Trim();
-        }
-
-        private static string BuildShortSummary(NeedCreateViewModel vm, string desc)
-        {
-            var story = (vm.Story ?? "").Trim();
-            if (!string.IsNullOrWhiteSpace(story))
-                return TruncateWithEllipsis(story, 160);
-
-            var title = (vm.Title ?? "").Trim();
-
-            string? firstLine =
-                FirstNonEmptyLine(vm.LongTermDream, vm.TriedAlready) ??
-                FirstNonEmptyLine(desc);
-
-            var combined = (title + (string.IsNullOrWhiteSpace(firstLine) ? "" : $": {firstLine}")).Trim();
-            if (string.IsNullOrWhiteSpace(combined))
-                combined = "Support request";
-
-            return TruncateWithEllipsis(combined, 160);
-        }
-
-        private static string? FirstNonEmptyLine(params string[] texts)
-        {
-            if (texts == null) return null;
-
-            foreach (var t in texts)
-            {
-                if (string.IsNullOrWhiteSpace(t)) continue;
-
-                var lines = t.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-                foreach (var raw in lines)
-                {
-                    var line = (raw ?? "").Trim();
-                    if (string.IsNullOrWhiteSpace(line)) continue;
-
-                    if (line.Equals("Story", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (line.Equals("Long-term dream", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (line.Equals("What has already been tried", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (line.Equals("Timing", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (line.Equals("Requested items", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (line.All(ch => ch == '-' || ch == '—' || ch == '_')) continue;
-
-                    return line;
-                }
-            }
-
-            return null;
-        }
-
-        private static string TruncateWithEllipsis(string text, int max)
-        {
-            text = (text ?? "").Trim();
-            if (text.Length <= max) return text;
-
-            return text.Substring(0, max).TrimEnd() + "...";
+            return View("Success", need);
         }
     }
 }

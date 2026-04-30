@@ -1,359 +1,208 @@
 @model UpliftBridge.Models.Need
 @using UpliftBridge.Models
-@using System.Text.RegularExpressions
 
 @{
-    ViewData["Title"] = string.IsNullOrWhiteSpace(Model?.Title) ? "Need Details" : Model.Title;
-    Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewData["BodyClass"] = "needs-details-page";
+    ViewData["Title"] = Model.Title ?? "Need Details";
 
-    var updates = (ViewBag.Updates as IEnumerable<NeedUpdate>)?.ToList() ?? new List<NeedUpdate>();
-    var photos = (ViewBag.Photos as IEnumerable<string>)?.Where(x => !string.IsNullOrWhiteSpace(x)).ToList() ?? new List<string>();
+    var photos = (ViewBag.Photos as IEnumerable<string>)?.Where(x => !string.IsNullOrWhiteSpace(x)).ToList()
+                 ?? new List<string>();
 
-    string Safe(string? s) => (s ?? "").Trim();
+    var updates = (ViewBag.Updates as IEnumerable<NeedUpdate>)?.ToList()
+                  ?? new List<NeedUpdate>();
 
-    var raw = Safe(Model?.Description);
-
-    var blocks = raw.Split(new[] { "\r\n\r\n", "\n\n" }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(b => b.Trim())
-                    .ToList();
-
-    var sections = new List<(string Title, string Body)>();
-
-    foreach (var b in blocks)
-    {
-        var lines = b.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).ToList();
-
-        if (lines.Count >= 3 && Regex.IsMatch(lines[1], @"^\-+$|^\—+$|^_+$"))
-        {
-            var title = lines[0].Trim();
-            var body = string.Join("\n", lines.Skip(2)).Trim();
-            sections.Add((title, body));
-        }
-        else
-        {
-            sections.Add(("", b));
-        }
-    }
-
-    string GetSection(string name)
-    {
-        var match = sections.FirstOrDefault(s => s.Title.Equals(name, StringComparison.OrdinalIgnoreCase));
-        return match.Body ?? "";
-    }
-
-    var story = GetSection("Story");
-    var dream = GetSection("Long-term dream");
-    var tried = GetSection("What has already been tried");
-    var timing = GetSection("Timing");
-    var reqItems = GetSection("Requested items");
-
-    var parsedItems = new List<(string Name, string Cost, string Link)>();
-
-    if (!string.IsNullOrWhiteSpace(reqItems))
-    {
-        var lines = reqItems.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
-                            .Select(x => x.Trim())
-                            .Where(x => !string.IsNullOrWhiteSpace(x))
-                            .ToList();
-
-        string curName = "";
-        string curCost = "";
-        string curLink = "";
-
-        foreach (var line in lines)
-        {
-            var m = Regex.Match(line, @"^\d+\.\s+(.*?)(?:\s+—\s+(.*))?$");
-            if (m.Success)
-            {
-                if (!string.IsNullOrWhiteSpace(curName))
-                    parsedItems.Add((curName, curCost, curLink));
-
-                curName = m.Groups[1].Value.Trim();
-                curCost = m.Groups[2].Value.Trim();
-                curLink = "";
-                continue;
-            }
-
-            var m2 = Regex.Match(line, @"^Link:\s*(.*)$", RegexOptions.IgnoreCase);
-            if (m2.Success)
-            {
-                curLink = m2.Groups[1].Value.Trim();
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(curName))
-            parsedItems.Add((curName, curCost, curLink));
-    }
-
-    var goal = Model.GoalAmount;
     var raised = Model.AmountRaised < 0 ? 0 : Model.AmountRaised;
-    var remaining = goal > 0 ? Math.Max(0m, goal - raised) : 0m;
+    var goal = Model.GoalAmount;
+    var remaining = goal > 0 ? Math.Max(0, goal - raised) : 0;
     var pct = goal > 0 ? Math.Min(100, (int)Math.Round((double)(raised / goal * 100m))) : 0;
 }
 
 @section Styles {
 <style>
-  .kg-hero{
-    border-radius: 28px;
-    background: rgba(15,23,42,.80);
-    border: 1px solid rgba(255,255,255,.10);
-    padding: 2.25rem;
-    box-shadow: 0 22px 70px rgba(0,0,0,.35);
-    color: rgba(255,255,255,.92);
-  }
-  .kg-hero h1{
-    font-family: "Playfair Display", serif;
-    font-weight: 700;
-    font-size: 2.5rem;
-    line-height: 1.1;
-    margin-bottom: .45rem;
-  }
-  .kg-card{
-    border-radius: 24px;
-    background: rgba(255,255,255,.94);
-    border: 1px solid rgba(15,23,42,.08);
-    box-shadow: 0 18px 50px rgba(15,23,42,.10);
-    padding: 1.75rem;
-    margin-bottom: 1.25rem;
-  }
-  .kg-h{
-    font-weight: 950;
-    color: #0b1220;
-    margin-bottom: .75rem;
-  }
-  .kg-muted{
-    color: rgba(15,23,42,.66);
-    font-weight: 650;
-  }
-  .kg-progress{
-    height: 10px;
-    border-radius: 999px;
-    background: rgba(15,23,42,.10);
-    overflow:hidden;
-  }
-  .kg-progress > div{
-    height:100%;
-    background: linear-gradient(90deg, #e6d3a2, #c8a96a);
-  }
-  .kg-grid{
-    display:grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: .75rem;
-  }
-  .kg-photo{
-    border-radius: 16px;
-    overflow:hidden;
-    border: 1px solid rgba(15,23,42,.10);
-    background: rgba(15,23,42,.04);
-    aspect-ratio: 4/3;
-  }
-  .kg-photo img{
-    width:100%;
-    height:100%;
-    object-fit: cover;
-    display:block;
-  }
-  .kg-item{
-    border-radius: 18px;
-    border: 1px solid rgba(15,23,42,.08);
-    background: rgba(15,23,42,.03);
-    padding: .9rem 1rem;
-    display:flex;
-    justify-content:space-between;
-    gap: 1rem;
-    margin-bottom: .6rem;
-  }
-  @@media (max-width: 992px){
-    .kg-grid{ grid-template-columns: repeat(2, 1fr); }
-    .kg-hero h1{ font-size: 2.1rem; }
-  }
-  @@media (max-width: 576px){
-    .kg-grid{ grid-template-columns: 1fr; }
-  }
+    .hero {
+        background: rgba(15,23,42,.85);
+        border-radius: 26px;
+        padding: 2rem;
+        color: #fff;
+        box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+
+    .cardx {
+        background: #fff;
+        border-radius: 22px;
+        padding: 1.5rem;
+        box-shadow: 0 12px 35px rgba(15,23,42,.08);
+        border: 1px solid rgba(15,23,42,.08);
+        margin-bottom: 1rem;
+    }
+
+    .progress {
+        height: 10px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: #e5e7eb;
+    }
+
+    .progress div {
+        height: 100%;
+        background: linear-gradient(90deg,#e6d3a2,#c8a96a);
+    }
+
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(3,1fr);
+        gap: .5rem;
+    }
+
+    .photo-grid img {
+        width: 100%;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+
+    .cta {
+        border-radius: 999px;
+        padding: 14px;
+        font-weight: 900;
+        font-size: 1.05rem;
+    }
+
+    @@media(max-width:768px){
+        .photo-grid{grid-template-columns:1fr 1fr;}
+    }
+
+    @@media(max-width:480px){
+        .photo-grid{grid-template-columns:1fr;}
+    }
 </style>
 }
 
-<div class="py-5">
-  <div class="container">
+<div class="container py-5">
 
-    <div class="kg-hero mb-4">
-      <div class="text-uppercase" style="letter-spacing:.18em;font-weight:900;opacity:.85;font-size:.8rem;">
-        Need details
-      </div>
+    <!-- HERO -->
+    <div class="hero mb-4">
+        <div style="letter-spacing:.15em;font-size:.8rem;opacity:.85;">
+            NEED DETAILS
+        </div>
 
-     <h1>@(string.IsNullOrWhiteSpace(Model?.Title) ? $"Need #{Model?.Id}" : Model.Title)</h1>
-      <div style="font-weight:700;color:rgba(255,255,255,.78);">
-        @Model?.Category • @Model?.Location
-      </div>
+        <h1 style="font-family:'Playfair Display',serif;font-size:2.3rem;">
+            @Model.Title
+        </h1>
 
-      <div class="mt-3">
-        <a class="btn btn-light rounded-pill fw-bold" asp-action="Index">← Back to Needs</a>
-      </div>
+        <div style="opacity:.85;font-weight:600;">
+            @Model.Category • @Model.Location
+        </div>
+
+        <a class="btn btn-light mt-3 rounded-pill fw-bold"
+           asp-action="Index">
+            ← Back
+        </a>
     </div>
 
     <div class="row g-4">
-      <div class="col-lg-7">
 
-        <div class="kg-card">
-          <div class="d-flex justify-content-between align-items-end mb-2">
-            <div class="kg-h">Funding</div>
-            <div class="kg-muted">
-              @raised.ToString("C0") raised • Goal @goal.ToString("C0") • Still needed @remaining.ToString("C0")
-            </div>
-          </div>
-          <div class="kg-progress mb-2">
-            <div style="width:@pct%"></div>
-          </div>
-          <div class="kg-muted" style="font-size:.9rem;">
-            @pct% funded
-          </div>
-        </div>
+        <!-- LEFT -->
+        <div class="col-lg-7">
 
-        @if (photos.Any())
-        {
-          <div class="kg-card">
-            <div class="kg-h">Photos</div>
-            <div class="kg-grid">
-              @foreach (var p in photos)
-              {
-                <div class="kg-photo">
-                  <img src="@p" alt="Need photo" />
+            <!-- FUNDING -->
+            <div class="cardx">
+                <div class="d-flex justify-content-between mb-2">
+                    <strong>Funding</strong>
+                    <span>
+                        @raised.ToString("C0") • Goal @goal.ToString("C0")
+                    </span>
                 </div>
-              }
+
+                <div class="progress mb-2">
+                    <div style="width:@pct%"></div>
+                </div>
+
+                <small>@pct% funded • @remaining.ToString("C0") still needed</small>
             </div>
-          </div>
-        }
 
-        @if (!string.IsNullOrWhiteSpace(story))
-        {
-          <div class="kg-card">
-            <div class="kg-h">Story</div>
-            <div class="kg-muted" style="white-space:pre-wrap;">@story</div>
-          </div>
-        }
-        else if (!string.IsNullOrWhiteSpace(Model.Description))
-        {
-          <div class="kg-card">
-            <div class="kg-h">Story</div>
-            <div class="kg-muted" style="white-space:pre-wrap;">@Model.Description</div>
-          </div>
-        }
-
-        @if (!string.IsNullOrWhiteSpace(dream) || !string.IsNullOrWhiteSpace(tried) || !string.IsNullOrWhiteSpace(timing))
-        {
-          <div class="kg-card">
-            <div class="kg-h">Details</div>
-
-            @if (!string.IsNullOrWhiteSpace(dream))
+            <!-- PHOTOS -->
+            @if (photos.Any())
             {
-              <div class="mb-3">
-                <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Long-term dream</div>
-                <div class="kg-muted" style="white-space:pre-wrap;">@dream</div>
-              </div>
-            }
-
-            @if (!string.IsNullOrWhiteSpace(tried))
-            {
-              <div class="mb-3">
-                <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">What has already been tried</div>
-                <div class="kg-muted" style="white-space:pre-wrap;">@tried</div>
-              </div>
-            }
-
-            @if (!string.IsNullOrWhiteSpace(timing))
-            {
-              <div>
-                <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Timing</div>
-                <div class="kg-muted" style="white-space:pre-wrap;">@timing</div>
-              </div>
-            }
-          </div>
-        }
-
-        @if (parsedItems.Any())
-        {
-          <div class="kg-card">
-            <div class="kg-h">Requested items</div>
-            @foreach (var it in parsedItems)
-            {
-              <div class="kg-item">
-                <div>
-                  <strong>@it.Name</strong>
-                  @if (!string.IsNullOrWhiteSpace(it.Link))
-                  {
-                    <div class="kg-muted" style="font-size:.9rem;">
-                      <a href="@it.Link" target="_blank" rel="noopener">View link</a>
+                <div class="cardx">
+                    <strong>Photos</strong>
+                    <div class="photo-grid mt-2">
+                        @foreach (var p in photos)
+                        {
+                            <img src="@p" />
+                        }
                     </div>
-                  }
                 </div>
-                <div style="font-weight:950;color:#0b1220;white-space:nowrap;">
-                  @it.Cost
-                </div>
-              </div>
             }
-          </div>
-        }
 
-        @if (updates.Any())
-        {
-          <div class="kg-card">
-            <div class="kg-h">Updates</div>
-            @foreach (var u in updates)
-            {
-              <div class="mb-3" style="border-left:4px solid rgba(200,169,106,.65);padding-left:1rem;">
-                <div style="font-weight:950;color:#0b1220;">@u.Title</div>
-                <div class="kg-muted" style="font-size:.9rem;">@u.CreatedAtUtc.ToString("MMM d, yyyy")</div>
-                <div class="kg-muted mt-2" style="white-space:pre-wrap;">@u.Message</div>
-              </div>
-            }
-          </div>
-        }
-
-      </div>
-
-      <div class="col-lg-5">
-
-        <div class="kg-card">
-          <div class="kg-h">Trust level</div>
-          <div class="kg-muted">
-            Verification level: <strong>@Model.VerificationLevel</strong>
-          </div>
-
-          @if (!string.IsNullOrWhiteSpace(Model.VerificationNote))
-          {
-            <div class="mt-2 kg-muted" style="white-space:pre-wrap;">@Model.VerificationNote</div>
-          }
-
-          @if (!string.IsNullOrWhiteSpace(Model.PayTo))
-          {
-            <hr class="my-3" />
-            <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Pay to</div>
-            <div class="kg-muted">@Model.PayTo</div>
-          }
-
-          @if (!string.IsNullOrWhiteSpace(Model.InstitutionName) || !string.IsNullOrWhiteSpace(Model.InstitutionType))
-          {
-            <hr class="my-3" />
-            <div style="font-weight:950;color:#0b1220;margin-bottom:.25rem;">Institution</div>
-            <div class="kg-muted">@($"{Model.InstitutionType} {Model.InstitutionName}".Trim())</div>
-          }
-
-          @if (!string.IsNullOrWhiteSpace(Model.InstitutionPaymentLink))
-          {
-            <div class="mt-3">
-              <a class="btn btn-outline-dark w-100 rounded-pill fw-bold"
-                 href="@Model.InstitutionPaymentLink"
-                 target="_blank"
-                 rel="noopener">
-                Open official payment link
-              </a>
+            <!-- STORY -->
+            <div class="cardx">
+                <strong>Story</strong>
+                <p style="white-space:pre-wrap;">@Model.Description</p>
             </div>
-          }
+
+            <!-- UPDATES -->
+            @if (updates.Any())
+            {
+                <div class="cardx">
+                    <strong>Updates</strong>
+                    @foreach (var u in updates)
+                    {
+                        <div class="mb-3">
+                            <strong>@u.Title</strong><br />
+                            <small>@u.CreatedAtUtc.ToString("MMM d, yyyy")</small>
+                            <p>@u.Message</p>
+                        </div>
+                    }
+                </div>
+            }
+
         </div>
 
-      </div>
-    </div>
+        <!-- RIGHT -->
+        <div class="col-lg-5">
 
-  </div>
+            <div class="cardx">
+
+                <!-- 🔥 MAIN CTA -->
+                <a class="btn btn-warning w-100 cta mb-3"
+                   asp-controller="Needs"
+                   asp-action="Fund"
+                   asp-route-id="@Model.Id">
+                    Give a Gift
+                </a>
+
+                <!-- TRUST -->
+                <div>
+                    <strong>Trust level</strong><br />
+                    <span>@Model.VerificationLevel</span>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.VerificationNote))
+                {
+                    <p class="mt-2">@Model.VerificationNote</p>
+                }
+
+                <!-- INSTITUTION -->
+                @if (!string.IsNullOrWhiteSpace(Model.InstitutionName))
+                {
+                    <hr />
+                    <strong>Institution</strong><br />
+                    <span>@Model.InstitutionName (@Model.InstitutionType)</span>
+                }
+
+                <!-- EXTERNAL LINK -->
+                @if (!string.IsNullOrWhiteSpace(Model.InstitutionPaymentLink))
+                {
+                    <a class="btn btn-outline-dark w-100 mt-3 rounded-pill fw-bold"
+                       href="@Model.InstitutionPaymentLink"
+                       target="_blank">
+                        Pay directly to institution
+                    </a>
+                }
+
+            </div>
+
+        </div>
+
+    </div>
 </div>

@@ -23,56 +23,67 @@ namespace UpliftBridge.Models
         public string DonorEmail { get; set; } = "";
 
         // -----------------------------
-        // Gift (pledge amount)
+        // Gift (amount donor wants to cover)
         // -----------------------------
-        [Range(50, 1000000, ErrorMessage = "Please enter an amount of at least $50.00.")]
+        [Range(50, 1000000, ErrorMessage = "Minimum gift is $50.")]
         public decimal ItemCost { get; set; }
 
         // -----------------------------
-        // Platform support (Option A)
-        // Donor pays ONLY platform support on UpliftBridge.
-        // Gift is handled on the official payment link later.
+        // Platform support (your revenue)
         // -----------------------------
-        [Range(0, 20, ErrorMessage = "Tip percent must be between 0 and 20.")]
+        [Range(0, 20)]
         public int TipPercent { get; set; } = 1;
 
-        // Client can send it, but server will RE-CALCULATE anyway.
-        public decimal TipAmount { get; set; }
-
         // -----------------------------
-        // Need snapshot for UI
+        // Need snapshot
         // -----------------------------
         public decimal GoalAmount { get; set; }
         public decimal AmountRaised { get; set; }
-        public decimal RemainingAmount { get; set; }
-        public bool IsFullyFunded { get; set; }
+
+        public decimal RemainingAmount
+        {
+            get
+            {
+                var remaining = GoalAmount - AmountRaised;
+                return remaining < 0 ? 0 : remaining;
+            }
+        }
+
+        public bool IsFullyFunded => RemainingAmount <= 0;
 
         // -----------------------------
-        // Helpers
+        // CORE LOGIC (DO NOT BREAK)
         // -----------------------------
         public decimal CappedGiftAmount
         {
             get
             {
-                var remaining = RemainingAmount < 0 ? 0m : RemainingAmount;
-                var raw = ItemCost < 0 ? 0m : ItemCost;
-                return Math.Min(raw, remaining);
+                var raw = ItemCost < 0 ? 0 : ItemCost;
+                return Math.Min(raw, RemainingAmount);
             }
         }
 
-        public decimal CalculatedPlatformFee
+        public decimal PlatformFee
         {
             get
             {
-                // 1% (or TipPercent), but prevent Stripe-min-charge failures
                 var pct = Math.Max(0, Math.Min(20, TipPercent));
                 var fee = Math.Round(CappedGiftAmount * (pct / 100m), 2);
 
-                // Stripe min charge safety (USD): $0.50
-                // If you hate this, then set minimum gift to $50 instead.
-                if (fee > 0m && fee < 0.50m) fee = 0.50m;
+                // Stripe minimum charge protection
+                if (fee > 0m && fee < 0.50m)
+                    fee = 0.50m;
 
                 return fee;
+            }
+        }
+
+        // 🔴 THIS is what Stripe will charge
+        public decimal TotalCharge
+        {
+            get
+            {
+                return PlatformFee; // ONLY fee charged on your platform
             }
         }
     }
