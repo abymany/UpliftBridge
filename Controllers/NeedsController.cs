@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Stripe;
 using Stripe.Checkout;
 using UpliftBridge.Data;
 using UpliftBridge.Models;
@@ -16,36 +15,34 @@ namespace UpliftBridge.Controllers
             _db = db;
         }
 
-        // =========================
-        // DETAILS PAGE
-        // =========================
         public async Task<IActionResult> Details(int id)
         {
             var need = await _db.Needs.FirstOrDefaultAsync(n => n.Id == id && n.IsPublished);
             if (need == null) return NotFound();
 
-            var photos = await _db.NeedPhotos
+            ViewBag.Photos = await _db.NeedPhotos
+                .AsNoTracking()
                 .Where(p => p.NeedId == id && !string.IsNullOrWhiteSpace(p.Path))
+                .OrderByDescending(p => p.CreatedAtUtc)
                 .Select(p => p.Path)
                 .ToListAsync();
 
-            var updates = await _db.NeedUpdates
+            ViewBag.Updates = await _db.NeedUpdates
+                .AsNoTracking()
                 .Where(u => u.NeedId == id && u.IsVisible)
                 .OrderByDescending(u => u.CreatedAtUtc)
                 .ToListAsync();
 
-            ViewBag.Photos = photos;
-            ViewBag.Updates = updates;
-
             return View(need);
         }
 
-        // =========================
-        // FUND PAGE (GET)
-        // =========================
+        [HttpGet]
         public async Task<IActionResult> Fund(int id)
         {
-            var need = await _db.Needs.FirstOrDefaultAsync(n => n.Id == id && n.IsPublished);
+            var need = await _db.Needs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.Id == id && n.IsPublished);
+
             if (need == null) return NotFound();
 
             var vm = new FundNeedViewModel
@@ -53,42 +50,52 @@ namespace UpliftBridge.Controllers
                 NeedId = need.Id,
                 Title = need.Title,
                 GoalAmount = need.GoalAmount,
-                AmountRaised = need.AmountRaised
+                AmountRaised = need.AmountRaised,
+                TipPercent = 1
             };
 
             return View(vm);
         }
 
-        // =========================
-        // CREATE STRIPE SESSION
-        // =========================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateCheckout(FundNeedViewModel vm)
         {
-            var need = await _db.Needs.FirstOrDefaultAsync(n => n.Id == vm.NeedId && n.IsPublished);
+            var need = await _db.Needs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.Id == vm.NeedId && n.IsPublished);
+
             if (need == null) return NotFound();
 
-            // 🔴 HARD RULE: always recalc server-side
             vm.GoalAmount = need.GoalAmount;
             vm.AmountRaised = need.AmountRaised;
 
-            var platformFee = vm.PlatformFee;
+            var platformFee = vm.CalculatedPlatformFee;
+            var giftAmount = vm.CappedGiftAmount;
 
-            if (platformFee <= 0)
+            if (giftAmount < 50m)
             {
-                ModelState.AddModelError("", "Invalid payment amount.");
+                ModelState.AddModelError(nameof(vm.ItemCost), "Minimum gift is $50.");
+                return View("Fund", vm);
+            }
+
+            if (platformFee <= 0m)
+            {
+                ModelState.AddModelError("", "Please choose platform support greater than $0.");
                 return View("Fund", vm);
             }
 
             var domain = $"{Request.Scheme}://{Request.Host}";
 
+            var successUrl = !string.IsNullOrWhiteSpace(need.InstitutionPaymentLink)
+                ? domain + $"/Needs/FundSuccess?session_id={{CHECKOUT_SESSION_ID}}&needId={need.Id}"
+                : domain + $"/Needs/FundSuccess?session_id={{CHECKOUT_SESSION_ID}}&needId={need.Id}";
+
             var options = new SessionCreateOptions
             {
                 Mode = "payment",
-                SuccessUrl = domain + $"/Needs/Success?session_id={{CHECKOUT_SESSION_ID}}&needId={need.Id}",
+                SuccessUrl = successUrl,
                 CancelUrl = domain + $"/Needs/Fund/{need.Id}",
-
                 LineItems = new List<SessionLineItemOptions>
                 {
                     new SessionLineItemOptions
@@ -97,57 +104,66 @@ namespace UpliftBridge.Controllers
                         PriceData = new SessionLineItemPriceDataOptions
                         {
                             Currency = "usd",
-                            UnitAmount = (long)(platformFee * 100), // cents
+                            UnitAmount = (long)Math.Round(platformFee * 100m),
                             ProductData = new SessionLineItemPriceDataProductDataOptions
                             {
                                 Name = "UpliftBridge platform support",
-                                Description = $"Support fee for: {need.Title}"
+                                Description = $"Platform support for: {need.Title}"
                             }
                         }
                     }
                 },
-
                 Metadata = new Dictionary<string, string>
                 {
                     { "needId", need.Id.ToString() },
-                    { "platformFee", platformFee.ToString() },
-                    { "giftAmount", vm.CappedGiftAmount.ToString() }
+                    { "giftAmount", giftAmount.ToString("0.00") },
+                    { "platformSupport", platformFee.ToString("0.00") },
+                    { "donorName", vm.IsAnonymous ? "" : (vm.DonorName ?? "") },
+                    { "donorEmail", vm.IsAnonymous ? "" : (vm.DonorEmail ?? "") },
+                    { "isAnonymous", vm.IsAnonymous ? "1" : "0" }
                 }
             };
 
             var service = new SessionService();
-            Session session = service.Create(options);
+            var session = service.Create(options);
 
             return Redirect(session.Url);
         }
 
-        // =========================
-        // SUCCESS PAGE
-        // =========================
-        public async Task<IActionResult> Success(string session_id, int needId)
+        [HttpGet]
+        public async Task<IActionResult> FundSuccess(int needId, string session_id)
         {
-            if (string.IsNullOrEmpty(session_id))
-                return RedirectToAction("Details", new { id = needId });
+            if (string.IsNullOrWhiteSpace(session_id))
+                return RedirectToAction(nameof(Details), new { id = needId });
 
             var service = new SessionService();
             var session = service.Get(session_id);
 
-            if (session.PaymentStatus != "paid")
-                return RedirectToAction("Details", new { id = needId });
+            if (!string.Equals(session.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase))
+                return RedirectToAction(nameof(Details), new { id = needId });
 
-            var need = await _db.Needs.FirstOrDefaultAsync(n => n.Id == needId);
+            var need = await _db.Needs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.Id == needId && n.IsPublished);
+
             if (need == null) return NotFound();
 
-            // 🔴 Update raised amount ONLY for platform-tracked gifts
-            if (session.Metadata.TryGetValue("giftAmount", out var giftStr)
-                && decimal.TryParse(giftStr, out var giftAmount))
-            {
-                need.AmountRaised += giftAmount;
-            }
+            // Important: we do NOT update AmountRaised here.
+            // The gift is completed on the official external site, not collected by UpliftBridge.
 
-            await _db.SaveChangesAsync();
+            return RedirectToAction(nameof(CompleteDonation), new { id = need.Id });
+        }
 
-            return View("Success", need);
+        [HttpGet]
+        public async Task<IActionResult> CompleteDonation(int id)
+        {
+            var need = await _db.Needs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.Id == id && n.IsPublished);
+
+            if (need == null) return NotFound();
+
+            return View(need);
         }
     }
 }
