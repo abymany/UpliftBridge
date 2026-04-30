@@ -9,9 +9,10 @@
 
 <div class="kg-wrap kg-shell">
   <div class="kg-glass">
-    <h1 class="kg-title">Complete your donation</h1>
+    <h1 class="kg-title">Step 2: Complete your donation</h1>
+
     <p class="kg-muted">
-      Your platform support is confirmed. If you want to complete the gift, use the official payment link below.
+      Your UpliftBridge platform support is confirmed. Now complete the actual gift directly on the official payment site.
     </p>
 
     @if (allowed)
@@ -22,9 +23,14 @@
         {
             <span class="text-muted">(@Model.InstitutionType)</span>
         }
-        <div class="small text-muted mt-1">
-          You are leaving UpliftBridge and going to an external official site.
+
+        <div class="small text-muted mt-2">
+          UpliftBridge does not collect the gift amount for this need. You will complete the donation directly with the official payee.
         </div>
+      </div>
+
+      <div class="alert alert-info text-start">
+        If the official payment page does not open automatically, use the button below.
       </div>
 
       <a class="kg-btn kg-btn-solid"
@@ -33,11 +39,17 @@
          rel="noopener noreferrer">
         Open official payment link
       </a>
+
+      <script>
+        setTimeout(function () {
+            window.open('@link', '_blank', 'noopener,noreferrer');
+        }, 1200);
+      </script>
     }
     else
     {
       <div class="alert alert-warning mt-3 text-start">
-        This need does not have a verified HTTPS official payment link enabled yet.
+        This need does not have a verified HTTPS official payment link enabled yet. Please go back to the need page or contact UpliftBridge before proceeding.
       </div>
     }
 
