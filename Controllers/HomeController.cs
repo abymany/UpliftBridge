@@ -17,26 +17,14 @@ namespace UpliftBridge.Controllers
             _db = db;
         }
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+        public IActionResult Index() => View();
 
-        // -----------------------------
-        // SUCCESS STORIES (LIST)
-        // URLs supported:
-        //   /Home/Stories
-        //   /Stories            (alias)
-        // -----------------------------
         [HttpGet("/Stories")]
         public async Task<IActionResult> Stories()
         {
             ViewData["Title"] = "Success Stories";
             ViewData["BodyClass"] = "stories-body";
 
-            // IMPORTANT:
-            // This assumes Story.IsPublished is bool in C# AND the DB column is boolean.
-            // If your DB column is currently int(0/1), fix the DB in Step 2 below.
             var stories = await _db.Stories
                 .Where(s => s.IsPublished)
                 .OrderByDescending(s => s.PublishedUtc ?? s.CreatedUtc)
@@ -45,12 +33,6 @@ namespace UpliftBridge.Controllers
             return View(stories);
         }
 
-        // -----------------------------
-        // SUCCESS STORIES (DETAIL)
-        // URLs supported:
-        //   /Home/StoryDetails/5
-        //   /Stories/5          (alias)
-        // -----------------------------
         [HttpGet("/Stories/{id:int}")]
         public async Task<IActionResult> StoryDetails(int id)
         {
@@ -64,22 +46,18 @@ namespace UpliftBridge.Controllers
             return View(story);
         }
 
-        // -----------------------------
-        // VERIFICATION PAGE
-        // URLs supported:
-        //   /Home/Verify
-        //   /Home/Verification   (alias)
-        //   /Verify              (alias)
-        // -----------------------------
         [HttpGet("/Verify")]
         [HttpGet("/Home/Verification")]
         public IActionResult Verify() => View();
 
-        // Keep your existing pages
         public IActionResult About() => View();
-        public IActionResult Privacy() => View();
         public IActionResult Faq() => View();
         public IActionResult Schools() => View();
+
+        public IActionResult Terms() => View();
+        public IActionResult Privacy() => View();
+        public IActionResult Safety() => View();
+        public IActionResult Contact() => View();
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
