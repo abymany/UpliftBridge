@@ -58,6 +58,45 @@
         height: 140px;
         object-fit: cover;
         border-radius: 12px;
+        cursor: pointer;
+        transition: transform .15s ease, opacity .15s ease;
+    }
+
+    .photo-grid img:hover {
+        transform: scale(1.02);
+        opacity: .92;
+    }
+
+    .photo-modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        inset: 0;
+        background: rgba(0,0,0,.86);
+        justify-content: center;
+        align-items: center;
+        padding: 24px;
+    }
+
+    .photo-modal img {
+        max-width: 92vw;
+        max-height: 88vh;
+        border-radius: 18px;
+        object-fit: contain;
+        box-shadow: 0 20px 70px rgba(0,0,0,.45);
+        background: #fff;
+    }
+
+    .photo-modal-close {
+        position: fixed;
+        top: 18px;
+        right: 22px;
+        color: #fff;
+        font-size: 38px;
+        font-weight: 700;
+        line-height: 1;
+        cursor: pointer;
+        z-index: 10000;
     }
 
     .cta {
@@ -128,7 +167,9 @@
                     <div class="photo-grid mt-2">
                         @foreach (var p in photos)
                         {
-                            <img src="@p" />
+                            <img src="@p"
+                                 alt="Need photo"
+                                 onclick="openNeedPhoto('@p')" />
                         }
                     </div>
                 </div>
@@ -163,7 +204,7 @@
 
             <div class="cardx">
 
-                <!-- 🔥 MAIN CTA -->
+                <!-- MAIN CTA -->
                 <a class="btn btn-warning w-100 cta mb-3"
                    asp-controller="Needs"
                    asp-action="Fund"
@@ -195,7 +236,8 @@
                 {
                     <a class="btn btn-outline-dark w-100 mt-3 rounded-pill fw-bold"
                        href="@Model.InstitutionPaymentLink"
-                       target="_blank">
+                       target="_blank"
+                       rel="noopener noreferrer">
                         Pay directly to institution
                     </a>
                 }
@@ -206,3 +248,35 @@
 
     </div>
 </div>
+
+<!-- PHOTO MODAL -->
+<div id="needPhotoModal" class="photo-modal" onclick="closeNeedPhoto()">
+    <span class="photo-modal-close" aria-label="Close photo">&times;</span>
+    <img id="needPhotoModalImg" src="" alt="Expanded need photo" />
+</div>
+
+@section Scripts {
+<script>
+    function openNeedPhoto(src) {
+        const modal = document.getElementById("needPhotoModal");
+        const img = document.getElementById("needPhotoModalImg");
+
+        img.src = src;
+        modal.style.display = "flex";
+    }
+
+    function closeNeedPhoto() {
+        const modal = document.getElementById("needPhotoModal");
+        const img = document.getElementById("needPhotoModalImg");
+
+        modal.style.display = "none";
+        img.src = "";
+    }
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            closeNeedPhoto();
+        }
+    });
+</script>
+}
