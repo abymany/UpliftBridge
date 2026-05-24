@@ -7,7 +7,6 @@ namespace UpliftBridge.Models
 {
     public class NeedItemLineVm
     {
-        // OPTIONAL unless your Validate() says otherwise
         [MaxLength(120)]
         public string? Name { get; set; }
 
@@ -20,9 +19,7 @@ namespace UpliftBridge.Models
 
     public class NeedCreateViewModel : IValidatableObject
     {
-        // -----------------------------
-        // Core (REQUIRED)
-        // -----------------------------
+        // CORE
         [Required, MaxLength(140)]
         public string Title { get; set; } = "";
 
@@ -53,11 +50,9 @@ namespace UpliftBridge.Models
         [Display(Name = "City & country")]
         public string CityCountry { get; set; } = "";
 
-        // -----------------------------
-        // Money
-        // -----------------------------
+        // MONEY
         [Required]
-        [Range(1, 1000000, ErrorMessage = "Please enter a realistic amount (at least 1).")]
+        [Range(1, 1000000)]
         [Display(Name = "Goal amount")]
         public decimal GoalAmount { get; set; }
 
@@ -67,54 +62,52 @@ namespace UpliftBridge.Models
         [MaxLength(40)]
         public string? Urgency { get; set; }
 
-        // -----------------------------
-        // Verification / trust
-        // -----------------------------
-        public VerificationLevel VerificationLevel { get; set; } = VerificationLevel.BasicContactVerified;
+        // TRUST
+        public VerificationLevel VerificationLevel { get; set; } =
+            VerificationLevel.BasicContactVerified;
 
         [MaxLength(600)]
-        [Display(Name = "Verification note")]
         public string? VerificationNote { get; set; }
 
         [MaxLength(180)]
-        [Display(Name = "Pay to (optional)")]
         public string? PayTo { get; set; }
 
-        // -----------------------------
-        // Institution / payment routing (OPTIONAL)
-        // -----------------------------
+        // FUNDING ROUTE
+        [Display(Name =
+            "Prefer donor to pay institution directly")]
+        public bool PreferDirectToInstitution { get; set; }
+
         [MaxLength(180)]
-        [Display(Name = "Institution name (optional)")]
+        [Display(Name = "Institution name")]
         public string? InstitutionName { get; set; }
 
         [MaxLength(60)]
-        [Display(Name = "Institution type (optional)")]
+        [Display(Name = "Institution type")]
         public string? InstitutionType { get; set; }
 
         [MaxLength(400)]
-        [Display(Name = "Institution payment link (optional)")]
+        [Display(Name = "Official payment link")]
         public string? InstitutionPaymentLink { get; set; }
 
-        [Display(Name = "Prefer donor to pay the institution directly (recommended when available)")]
-        public bool PreferDirectToInstitution { get; set; }
         [MaxLength(400)]
-        [Display(Name = "Full institution address (private)")]
+        [Display(Name = "Institution address (private)")]
         public string? InstitutionFullAddress { get; set; }
 
-        // -----------------------------
-        // Contact (private)
-        // -----------------------------
+        // NEW
+        [MaxLength(1200)]
+        [Display(Name =
+            "If no official payment link exists, explain where support should go")]
+        public string? FundingRouteExplanation { get; set; }
+
+        // CONTACT
         [Required, MaxLength(160)]
-        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
-        [Display(Name = "Contact email")]
+        [EmailAddress]
         public string ContactEmail { get; set; } = "";
 
         [MaxLength(40)]
         public string? ContactPhone { get; set; }
 
-        // -----------------------------
-        // Items
-        // -----------------------------
+        // ITEMS
         public List<NeedItemLineVm> Items { get; set; } = new()
         {
             new NeedItemLineVm(),
@@ -122,78 +115,69 @@ namespace UpliftBridge.Models
             new NeedItemLineVm()
         };
 
-        // -----------------------------
-        // Photos (optional)
-        // -----------------------------
         public List<IFormFile> Photos { get; set; } = new();
 
-        // -----------------------------
-        // Consent
-        // -----------------------------
-        [Range(typeof(bool), "true", "true", ErrorMessage = "You must confirm the honesty pledge.")]
+        [Range(typeof(bool),"true","true")]
         public bool HonestyPledge { get; set; }
 
-        // -----------------------------
-        // Server-side validation rules (THE SOURCE OF TRUTH)
-        // -----------------------------
-        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        public IEnumerable<ValidationResult> Validate(
+            ValidationContext validationContext)
         {
-            // Ensure 3 slots exist
-            while (Items.Count < 3) Items.Add(new NeedItemLineVm());
+            while (Items.Count < 3)
+                Items.Add(new NeedItemLineVm());
 
-            // Ban fake placeholders
             static bool IsTrash(string? s)
             {
-                if (string.IsNullOrWhiteSpace(s)) return true;
+                if (string.IsNullOrWhiteSpace(s))
+                    return true;
+
                 var v = s.Trim().ToLowerInvariant();
-                return v is "na" or "n/a" or "none" or "-" or "--" or "null" or "0";
+
+                return v is
+                    "na" or "n/a" or
+                    "none" or "-" or
+                    "--" or "null" or "0";
             }
 
-            // Item 1 REQUIRED: Name + Cost (link optional)
-            var i1 = Items[0] ?? new NeedItemLineVm();
+            var i1 = Items[0];
 
             if (IsTrash(i1.Name))
-                yield return new ValidationResult("Item 1 name is required (don’t use NA).", new[] { "Items[0].Name" });
+                yield return new ValidationResult(
+                    "Item 1 required",
+                    new[] { "Items[0].Name" });
 
             if (IsTrash(i1.Cost))
-                yield return new ValidationResult("Item 1 estimated cost is required (don’t use NA).", new[] { "Items[0].Cost" });
+                yield return new ValidationResult(
+                    "Item 1 cost required",
+                    new[] { "Items[0].Cost" });
 
-            // Item 2/3 OPTIONAL — if user touches any field with REAL content, require Name + Cost (no trash)
-            for (int idx = 1; idx <= 2; idx++)
-            {
-                var it = Items[idx] ?? new NeedItemLineVm();
-
-                // ✅ treat NA / n/a / none / "-" as empty (not "touched")
-                var any =
-                    !IsTrash(it.Name) ||
-                    !IsTrash(it.Cost) ||
-                    !IsTrash(it.Link);
-
-                if (!any) continue;
-
-                if (IsTrash(it.Name))
-                    yield return new ValidationResult($"Item {idx + 1} name is required when you add an item.", new[] { $"Items[{idx}].Name" });
-
-                if (IsTrash(it.Cost))
-                    yield return new ValidationResult($"Item {idx + 1} estimated cost is required when you add an item.", new[] { $"Items[{idx}].Cost" });
-            }
-
-            // Institution payment link required ONLY if PreferDirectToInstitution is checked
+            // DIRECT INSTITUTION ROUTE
             if (PreferDirectToInstitution)
             {
-                if (string.IsNullOrWhiteSpace(InstitutionPaymentLink))
+                if (string.IsNullOrWhiteSpace(
+                    InstitutionPaymentLink))
                 {
                     yield return new ValidationResult(
-                        "Institution payment link is required when direct payment is selected.",
-                        new[] { nameof(InstitutionPaymentLink) }
-                    );
+                        "Official payment link required.",
+                        new[]
+                        {
+                            nameof(
+                            InstitutionPaymentLink)
+                        });
                 }
-                else if (!Uri.IsWellFormedUriString(InstitutionPaymentLink, UriKind.Absolute))
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(
+                    FundingRouteExplanation))
                 {
                     yield return new ValidationResult(
-                        "Please enter a valid, official payment URL.",
-                        new[] { nameof(InstitutionPaymentLink) }
-                    );
+                        "Explain where support should go when no official payment route exists.",
+                        new[]
+                        {
+                            nameof(
+                            FundingRouteExplanation)
+                        });
                 }
             }
         }
