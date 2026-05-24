@@ -409,6 +409,65 @@
             </div>
 
             <hr class="my-4" />
+            <hr class="my-4" />
+
+<h6 class="mb-3" style="font-weight:900;">
+    Where should support go?
+</h6>
+
+<div class="kg-consent-box mb-3">
+
+    <div class="form-check mb-2">
+
+        <input class="form-check-input"
+               asp-for="PreferDirectToInstitution"
+               id="fundingRouteToggle" />
+
+        <label class="form-check-label"
+               for="fundingRouteToggle">
+
+            Direct institution / organization payment available
+
+        </label>
+
+    </div>
+
+    <div class="kg-note">
+
+        Examples:
+        school portal,
+        hospital bill,
+        sports academy fee,
+        official vendor payment page.
+
+    </div>
+
+</div>
+
+<div id="manualFundingWrap"
+     class="mb-3">
+
+    <label class="form-label"
+           asp-for="FundingRouteExplanation">
+    </label>
+
+    <textarea class="form-control"
+              asp-for="FundingRouteExplanation"
+              rows="3"
+              placeholder="Explain where support should go when no official payment route exists.">
+    </textarea>
+
+    <div class="form-text">
+
+        Required when no direct institution payment exists.
+
+    </div>
+
+    <span class="text-danger"
+          asp-validation-for="FundingRouteExplanation">
+    </span>
+
+</div>
 
             <h6 class="mb-2" style="font-weight:900;">Institution verification (optional)</h6>
 
@@ -562,21 +621,34 @@
     document.addEventListener("DOMContentLoaded", function () {
 
         const directPayToggle = document.getElementById("directPayToggle");
+        const manualFundingWrap =
+        document.getElementById("manualFundingWrap");
         const payLinkWrap = document.getElementById("payLinkWrap");
         const institutionPaymentLinkInput = document.getElementById("institutionPaymentLinkInput");
 
         if (directPayToggle && payLinkWrap && institutionPaymentLinkInput) {
-            function syncPayLink() {
-                const enabled = directPayToggle.checked;
-                payLinkWrap.style.display = enabled ? "" : "none";
-                institutionPaymentLinkInput.disabled = !enabled;
-                if (!enabled) institutionPaymentLinkInput.value = "";
-            }
+            function syncPayLink() function syncPayLink() {
 
-            directPayToggle.addEventListener("change", syncPayLink);
-            syncPayLink();
-        }
+    const enabled =
+        directPayToggle.checked;
 
+    payLinkWrap.style.display =
+        enabled ? "" : "none";
+
+    institutionPaymentLinkInput.disabled =
+        !enabled;
+
+    if (manualFundingWrap)
+    {
+        manualFundingWrap.style.display =
+            enabled ? "none" : "";
+    }
+
+    if (!enabled)
+    {
+        institutionPaymentLinkInput.value = "";
+    }
+}
         const trash = new Set(["na", "n/a", "none", "-", "--", "null", "0"]);
         document.querySelectorAll(".kg-optional-item").forEach(el => {
             el.addEventListener("blur", () => {
